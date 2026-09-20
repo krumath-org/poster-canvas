@@ -3,6 +3,8 @@ import {
   CircleHelp,
   Download,
   FolderOpen,
+  Github,
+  Heart,
   Home,
   LayoutTemplate,
   Moon,
@@ -23,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { ExportMenu } from "@/components/export/ExportMenu";
-import { krumathHomeUrl } from "@/lib/krumathUrls";
+import { githubRepoUrl, krumathHomeUrl, krumathPricingUrl } from "@/lib/krumathUrls";
 import { publicUrl } from "@/lib/publicUrl";
 import { useMinWidth, useViewportTier, VIEWPORT_XL } from "@/hooks/use-viewport-tier";
 import { useEditorStore } from "@/stores/editorStore";
@@ -112,6 +114,8 @@ export function AppHeader({ bridge }: AppHeaderProps) {
               onHelp={() => setOnboardingOpen(true)}
               onTheme={toggleTheme}
             />
+            <GitHubButton />
+            <SupportButton />
             <KruMathHomeButton />
           </>
         ) : (
@@ -143,11 +147,53 @@ export function AppHeader({ bridge }: AppHeaderProps) {
               {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </HeaderButton>
             <div className="mx-0.5 h-4 w-px bg-border" />
+            <GitHubButton />
+            <SupportButton />
             <KruMathHomeButton />
           </>
         )}
       </div>
     </header>
+  );
+}
+
+function GitHubButton() {
+  return (
+    <WithTooltip label="Open GitHub repository">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1.5 px-2 text-xs"
+        aria-label="Open GitHub repository"
+        asChild
+      >
+        <a href={githubRepoUrl()}>
+          <Github className="h-3.5 w-3.5" />
+          <span className="hidden xl:inline">GitHub</span>
+        </a>
+      </Button>
+    </WithTooltip>
+  );
+}
+
+function SupportButton() {
+  return (
+    <WithTooltip label="Support / Donate">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1.5 px-2 text-xs"
+        aria-label="Support / Donate"
+        asChild
+      >
+        <a href={krumathPricingUrl()}>
+          <Heart className="h-3.5 w-3.5" />
+          <span className="hidden xl:inline">Support</span>
+        </a>
+      </Button>
+    </WithTooltip>
   );
 }
 
@@ -231,6 +277,19 @@ function HeaderOverflowMenu({
         <DropdownMenuItem onSelect={onTheme}>
           {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
           Theme
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <a href={githubRepoUrl()}>
+            <Github className="h-3.5 w-3.5" />
+            GitHub
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href={krumathPricingUrl()}>
+            <Heart className="h-3.5 w-3.5" />
+            Support
+          </a>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

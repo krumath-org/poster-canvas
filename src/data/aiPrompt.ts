@@ -58,7 +58,7 @@ Requirements:
 - HTML + Tailwind and/or @poster/core; no React import; no other packages
 - Fill the whole canvas
 - ${opts.look}
-- Default colors: Modern Blue & White EdTech theme — centered on #2563EB royal blue with sky-blue gradients (user can change via Colors below)
+- Default colors: Modern White EdTech theme — centered on #2563EB royal blue with sky-blue gradients (user can change via Colors below)
 ${fontBlock(opts.fonts)}${extras}
 - Optional: import { Logo } from "@poster/core" for a brand mark
 
@@ -99,7 +99,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Extra text: [date, place, CTA, short body]",
           "Language: [English / Khmer / both]",
           "Style: [minimal / bold / corporate / playful / dark / clean]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],
@@ -141,7 +141,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Table rows: [categories or line items]",
           "Language: [English / Khmer / both]",
           "Style: [corporate / clean / dark / minimal]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],
@@ -181,7 +181,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Primary CTA: [text]",
           "Language: [English / Khmer / both]",
           "Style: [SaaS / minimal / playful / dark / corporate]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],
@@ -218,7 +218,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Key numbers: [list]",
           "Language: [English / Khmer / both]",
           "Style: [bold / clean / playful / dark / corporate]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],
@@ -260,7 +260,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Formulas to include: [TeX or describe]",
           "Language: [English / Khmer / both]",
           "Style: [clean / playful / academic / dark]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],
@@ -294,7 +294,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Kicker: [optional short label]",
           "Language: [English / Khmer / both]",
           "Style: [minimal / bold / dark / soft / editorial]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],
@@ -332,7 +332,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "CTA: [button or URL text]",
           "Language: [English / Khmer / both]",
           "Style: [bold / clean / playful / luxury / dark]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],
@@ -371,7 +371,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Footer: [presenter / date / page]",
           "Language: [English / Khmer / both]",
           "Style: [corporate / minimal / bold / dark]",
-          "Colors: [leave blank for default Modern Blue & White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",
         ],

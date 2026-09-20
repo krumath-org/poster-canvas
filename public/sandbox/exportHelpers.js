@@ -516,15 +516,14 @@ export function preparePosterDomForExport(root) {
   `;
   document.head.appendChild(style);
 
-  // html-to-image SVG foreignObject re-measures Khmer and can wrap single-line runs.
-  // Only freeze leaves that are already ONE line in the live preview — never force
-  // nowrap onto intentional multi-line body copy (scrollWidth<=clientWidth is true for those too).
+  // html-to-image SVG foreignObject re-measures text and can wrap single-line runs
+  // (Khmer and Latin). Only freeze leaves that are already ONE line in the live
+  // preview — never force nowrap onto intentional multi-line body copy.
   const frozen = [];
-  const khmerRe = /[\u1780-\u17FF]/;
   const freezeWalk = (el) => {
     if (!el || el.nodeType !== 1) return;
     const text = (el.textContent || "").trim();
-    if (text && khmerRe.test(text) && el.children.length === 0) {
+    if (text && el.children.length === 0) {
       const range = document.createRange();
       range.selectNodeContents(el);
       const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height > 0);
@@ -534,6 +533,7 @@ export function preparePosterDomForExport(root) {
         if (!rowTops.some((t) => Math.abs(t - r.top) < 2)) rowTops.push(r.top);
       }
       if (rowTops.length === 1) {
+        const isKhmer = /[\u1780-\u17FF]/.test(text);
         frozen.push({
           el,
           whiteSpace: el.style.whiteSpace,
@@ -541,7 +541,7 @@ export function preparePosterDomForExport(root) {
           overflowWrap: el.style.overflowWrap,
         });
         el.style.whiteSpace = "nowrap";
-        el.style.wordBreak = "keep-all";
+        if (isKhmer) el.style.wordBreak = "keep-all";
         el.style.overflowWrap = "normal";
       }
     }

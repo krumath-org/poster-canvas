@@ -13,9 +13,9 @@ describe("html-to-image capture options", () => {
   });
 
   it("exposes Kantumruy + IBM Plex check specs including weight 900", () => {
-    expect(POSTER_FONT_CHECK_SPECS.some((s) => s.includes("Kantumruy Pro"))).toBe(true);
-    expect(POSTER_FONT_CHECK_SPECS.some((s) => s.includes("900"))).toBe(true);
-    expect(POSTER_FONT_CHECK_SPECS.some((s) => s.includes("IBM Plex Sans"))).toBe(true);
+    expect(POSTER_FONT_CHECK_SPECS.some((s: string) => s.includes("Kantumruy Pro"))).toBe(true);
+    expect(POSTER_FONT_CHECK_SPECS.some((s: string) => s.includes("900"))).toBe(true);
+    expect(POSTER_FONT_CHECK_SPECS.some((s: string) => s.includes("IBM Plex Sans"))).toBe(true);
   });
 
   it("buildHtmlToImageOptions uses manual embed CSS and disables cacheBust", async () => {

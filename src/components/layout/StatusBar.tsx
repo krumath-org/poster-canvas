@@ -33,6 +33,7 @@ export function StatusBar() {
   const previewStale = usePreviewStore((s) => s.previewStale);
   const current = useProjectStore((s) => s.current);
   const dirty = useEditorStore((s) => s.dirty);
+  const saveStatus = useUiStore((s) => s.saveStatus);
   const consoleExpanded = useUiStore((s) => s.consoleExpanded);
   const setConsoleExpanded = useUiStore((s) => s.setConsoleExpanded);
 
@@ -83,7 +84,37 @@ export function StatusBar() {
           ) : (
             <span>Preview out of date</span>
           ))}
-        {dirty &&
+        {saveStatus === "saving" &&
+          (compact ? (
+            <WithTooltip label="Saving…">
+              <span className="cursor-default" aria-label="Saving">
+                …
+              </span>
+            </WithTooltip>
+          ) : (
+            <span>Saving…</span>
+          ))}
+        {saveStatus === "saved" && !dirty &&
+          (compact ? (
+            <WithTooltip label="Saved">
+              <span className="cursor-default text-emerald-600 dark:text-emerald-400" aria-label="Saved">
+                ✓
+              </span>
+            </WithTooltip>
+          ) : (
+            <span className="text-emerald-600 dark:text-emerald-400">Saved</span>
+          ))}
+        {saveStatus === "error" &&
+          (compact ? (
+            <WithTooltip label="Save failed">
+              <span className="cursor-default text-destructive" aria-label="Save failed">
+                !
+              </span>
+            </WithTooltip>
+          ) : (
+            <span className="text-destructive">Save failed</span>
+          ))}
+        {dirty && saveStatus !== "saving" &&
           (compact ? (
             <WithTooltip label="Unsaved changes">
               <span className="cursor-default" aria-label="Unsaved changes">

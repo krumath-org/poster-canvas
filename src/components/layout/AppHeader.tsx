@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { AccountMenu } from "@/components/layout/AccountMenu";
 import { githubRepoUrl, krumathHomeUrl, krumathPricingUrl } from "@/lib/krumathUrls";
 import { publicUrl } from "@/lib/publicUrl";
 import { useMinWidth, useViewportTier, VIEWPORT_XL } from "@/hooks/use-viewport-tier";
@@ -117,6 +118,7 @@ export function AppHeader({ bridge }: AppHeaderProps) {
             <GitHubButton />
             <SupportButton />
             <KruMathHomeButton />
+            <AccountMenu />
           </>
         ) : (
           <>
@@ -150,6 +152,7 @@ export function AppHeader({ bridge }: AppHeaderProps) {
             <GitHubButton />
             <SupportButton />
             <KruMathHomeButton />
+            <AccountMenu />
           </>
         )}
       </div>

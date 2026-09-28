@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AuthGate } from "@/components/AuthGate";
 import { ClientPosterStudio } from "@/components/layout/ClientPosterStudio";
+import { requirePlayableUser } from "@/lib/requirePlayableUser";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: async ({ location }) => {
+    return { auth: await requirePlayableUser(location.pathname) };
+  },
   head: () => ({
     meta: [
       { title: "Poster Studio" },
@@ -27,5 +32,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return <ClientPosterStudio />;
+  const { auth } = Route.useRouteContext();
+  return (
+    <AuthGate initial={auth} routerPath="/">
+      <ClientPosterStudio />
+    </AuthGate>
+  );
 }

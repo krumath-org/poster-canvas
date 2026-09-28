@@ -6,6 +6,7 @@ import { getProjectRepository } from "@/lib/config";
 import { DEFAULT_LOGO_SLOT } from "@/lib/logoSlot";
 import { useEditorStore } from "@/stores/editorStore";
 import { usePreviewStore } from "@/stores/previewStore";
+import { useUiStore } from "@/stores/uiStore";
 import { toast } from "sonner";
 
 interface ProjectState {
@@ -16,7 +17,7 @@ interface ProjectState {
   loadProjects: () => Promise<void>;
   openProject: (id: string) => Promise<void>;
   newProject: (name?: string, width?: number, height?: number) => Promise<void>;
-  saveProject: () => Promise<void>;
+  saveProject: (options?: { quiet?: boolean }) => Promise<boolean>;
   duplicateProject: () => Promise<void>;
   renameProject: (name: string, id?: string) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
@@ -67,7 +68,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const projects = await getProjectRepository().getProjects();
       set({ projects, loading: false });
     } catch (err) {
-      set({ loading: false, error: String(err) });
+      const message = String(err);
+      set({ loading: false, error: message });
+      toast.error(message);
     }
   },
 
@@ -77,13 +80,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const project = await getProjectRepository().getProject(id);
       if (!project) {
         set({ loading: false, error: "Project not found" });
+        toast.error("Project not found");
         return;
       }
       useEditorStore.getState().resetCode(project.code);
       usePreviewStore.getState().reloadSandbox();
       set({ current: project, loading: false });
     } catch (err) {
-      set({ loading: false, error: String(err) });
+      const message = String(err);
+      set({ loading: false, error: message });
+      toast.error(message);
     }
   },
 
@@ -101,17 +107,21 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const projects = await getProjectRepository().getProjects();
       set({ current: project, projects, loading: false });
     } catch (err) {
-      set({ loading: false, error: String(err) });
+      const message = String(err);
+      set({ loading: false, error: message });
+      toast.error(message);
     }
   },
 
-  saveProject: async () => {
+  saveProject: async (options) => {
+    const quiet = options?.quiet === true;
     const { current } = get();
     if (!current) {
-      toast.error("Nothing to save — create or open a project first");
-      return;
+      if (!quiet) toast.error("Nothing to save — create or open a project first");
+      return false;
     }
-    set({ loading: true, error: null });
+    if (!quiet) set({ loading: true, error: null });
+    useUiStore.getState().setSaveStatus("saving");
     try {
       const code = useEditorStore.getState().code;
       const updated: PosterProject = {
@@ -122,12 +132,23 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       await getProjectRepository().updateProject(updated);
       useEditorStore.getState().markSaved();
       const projects = await getProjectRepository().getProjects();
-      set({ current: updated, projects, loading: false });
-      toast.success(`Saved “${updated.name}”`);
+      // Cloud repo strips logo binaries; restore in-memory session assets after save.
+      const saved = projects.find((p) => p.id === updated.id) ?? updated;
+      const withSessionAssets: PosterProject = {
+        ...saved,
+        assets: current.assets?.logo ? current.assets : (saved.assets ?? {}),
+        logoSlot: current.logoSlot ?? saved.logoSlot ?? null,
+      };
+      set({ current: withSessionAssets, projects, loading: false });
+      useUiStore.getState().setSaveStatus("saved");
+      if (!quiet) toast.success(`Saved “${updated.name}”`);
+      return true;
     } catch (err) {
       const message = String(err);
       set({ loading: false, error: message });
-      toast.error(message);
+      useUiStore.getState().setSaveStatus("error");
+      if (!quiet) toast.error(message);
+      return false;
     }
   },
 
@@ -200,6 +221,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (!current) return;
     const updated: PosterProject = { ...current, width, height, updatedAt: now() };
     set({ current: updated });
+    markProjectDirty();
     usePreviewStore.getState().reloadSandbox();
   },
 
@@ -234,6 +256,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
     useEditorStore.getState().resetCode(code);
     usePreviewStore.getState().reloadSandbox();
+    markProjectDirty();
   },
 
   setLogo: (asset) => {

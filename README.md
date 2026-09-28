@@ -9,7 +9,8 @@ User poster code never runs in the main application — it is compiled and rende
 - Monaco editor with TypeScript / TSX support
 - Manual Run preview in an isolated sandbox (Cmd/Ctrl+Enter)
 - Starter templates and canvas size presets
-- Local project storage (`localStorage`)
+- Local project storage in DEV (`localStorage`); production cloud codes on KruMath Supabase
+- Hard Gate: must sign in on krumath.com to use production
 - Export to PNG, SVG, PDF, JPG, and WebP
 - First-visit onboarding tour (reopen via Help)
 - Command palette and keyboard shortcuts
@@ -56,7 +57,7 @@ Environment variables are loaded from `.env`. See [`.env.example`](.env.example)
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `VITE_API_BASE_URL`      | Optional API base URL for backend integration                                |
 | `VITE_BASE_PATH`         | App URL prefix. Defaults to `/poster-canvas`. Set to `/` for root deployment |
-| `VITE_SUPABASE_URL`      | Supabase project URL (required for production soft gate)                     |
+| `VITE_SUPABASE_URL`      | Supabase project URL (required for production Hard Gate + cloud codes)       |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon / publishable key                                              |
 | `VITE_KRUMATH_ORIGIN`    | Optional local KruMath origin for sign-in / home redirects                   |
 

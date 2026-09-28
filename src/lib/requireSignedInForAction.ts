@@ -4,9 +4,9 @@ import { isPlayableUser } from "@/lib/authUser";
 import { publicAppPath, signInUrl } from "@/lib/krumathUrls";
 
 /**
- * Soft gate for Export / Add Logo (browser only).
+ * Defense-in-depth for Export / Add Logo after the Hard Gate.
  * Returns true when the action may proceed; false after redirecting to sign-in.
- * Skipped in DEV so local editing stays frictionless (no krumath.com cookies).
+ * Skipped in DEV so local editing stays frictionless.
  */
 export const requireSignedInForAction = createClientOnlyFn(async (): Promise<boolean> => {
   if (import.meta.env.DEV) return true;

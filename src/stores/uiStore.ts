@@ -6,6 +6,9 @@ export type { ThemeMode };
 
 export type WorkspaceTab = "code" | "preview";
 
+/** Quiet autosave / manual save indicator for the status bar. */
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
+
 interface UiState {
   theme: ThemeMode;
   workspaceTab: WorkspaceTab;
@@ -15,6 +18,7 @@ interface UiState {
   commandPaletteOpen: boolean;
   consoleExpanded: boolean;
   onboardingOpen: boolean;
+  saveStatus: SaveStatus;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
   setWorkspaceTab: (tab: WorkspaceTab) => void;
@@ -24,6 +28,7 @@ interface UiState {
   setCommandPaletteOpen: (open: boolean) => void;
   setConsoleExpanded: (expanded: boolean) => void;
   setOnboardingOpen: (open: boolean) => void;
+  setSaveStatus: (status: SaveStatus) => void;
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
@@ -35,6 +40,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   commandPaletteOpen: false,
   consoleExpanded: false,
   onboardingOpen: false,
+  saveStatus: "idle",
   setTheme: (theme) => {
     applyThemeToDocument(theme);
     persistTheme(theme);
@@ -55,4 +61,5 @@ export const useUiStore = create<UiState>((set, get) => ({
   setCommandPaletteOpen: (commandPaletteOpen) => set({ commandPaletteOpen }),
   setConsoleExpanded: (consoleExpanded) => set({ consoleExpanded }),
   setOnboardingOpen: (onboardingOpen) => set({ onboardingOpen }),
+  setSaveStatus: (saveStatus) => set({ saveStatus }),
 }));

@@ -1,30 +1,73 @@
 # Integration
 
-Poster Studio is designed to embed inside larger products (e.g. [krumath.com](https://krumath.com)). Soft-gate specifics for mounting under **krumath.com/poster-canvas** are below.
+Poster Studio mounts under **krumath.com/poster-canvas** as a Hard-gated KruMath project (same pattern as maze-rank / quick-brain-racer).
 
-## KruMath soft gate (`/poster-canvas`)
+## KruMath Hard Gate (`/poster-canvas`)
 
-Anyone may open the studio and edit. **Export** and **Add Logo** (upload/replace) require a signed-in, non-anonymous Supabase user. Otherwise the browser redirects to:
+The studio does **not** load for unsigned or anonymous visitors. Production flow:
 
 ```text
-/sign-in?returnUrl=/poster-canvas
+Open /poster-canvas
+  → requirePlayableUser + AuthGate
+  → playable non-anonymous session → studio
+  → else → /sign-in?returnUrl=/poster-canvas
 ```
 
-- Session: same Supabase project and `.krumath.com` cookies as KruMath (not Firebase).
-- Dev: the soft gate is skipped (`import.meta.env.DEV`) so local editing works without cookies.
-- Deploy: Cloudflare Worker via Nitro (`npm run deploy`). Route `krumath.com/poster-canvas*` to the `poster-canvas` Worker (more specific than the main `krumath` Worker).
+- **Session:** same Supabase project as KruMath. Browser reads the shared **localStorage** key (`sb-<ref>-auth-token`) via `createClient` — the same storage `apps/web` writes. Do **not** use a cookie-backed browser client for the gate (that cannot see the main-site session).
+- **SSR:** Worker cookies are opportunistic only. Missing cookies → auth status `unknown`; AuthGate finishes in the browser. Never treat missing cookies as signed-out (production outage regression in sibling games).
+- **DEV:** Hard Gate is skipped (`import.meta.env.DEV`) so local editing works without a krumath.com session.
+- **Deploy:** Cloudflare Worker via Nitro (`npm run deploy`). Route `krumath.com/poster-canvas*` to the `poster-canvas` Worker (more specific than the main `krumath` Worker).
 
-**Security note:** This soft gate is **client-side only**. It is not a hard server security boundary. Do not treat it as authorization for protected APIs or secrets.
+Reference implementations: `maze-rank`, `quick-brain-racer` (`AuthGate` + `requirePlayableUser` + localStorage client).
+
+**Security note:** The Hard Gate UX is client-resolved against shared localStorage/session. Database access is still protected by Supabase RLS. Do not treat the client gate alone as authorization for secrets or `service_role`.
+
+### Account / Profile
+
+Header Account menu shows the signed-in name/email and **Log out** (shared `supabase.auth.signOut()`). After logout, the Hard Gate redirects to sign-in. Home / Support / GitHub remain available.
+
+### Cloud code storage + autosave
+
+Signed-in projects persist to KruMath Supabase table `poster_canvas_projects`:
+
+| Stored | Not stored |
+|--------|------------|
+| `id`, `user_id`, `name`, `code`, `width`, `height`, `logo_slot` JSON, timestamps | Export files (PNG/PDF/…), logo `dataUrl` binaries, preview captures |
+
+- RLS: `auth.uid() = user_id` for SELECT/INSERT/UPDATE/DELETE (`authenticated` role only).
+- SQL: [`supabase/migrations/20260928140000_poster_canvas_projects.sql`](../supabase/migrations/20260928140000_poster_canvas_projects.sql)
+- Autosave: **2.5s debounce** after the last change while dirty; skips identical payloads; StatusBar shows Saving / Saved / Save failed. Manual Save flushes immediately.
+- DEV uses `localStorage` (`LocalProjectRepository`). Production uses `SupabaseProjectRepository`.
 
 ### Operator checklist
 
 ```text
-[ ] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY set at build time
+[ ] Apply supabase/migrations/20260928140000_poster_canvas_projects.sql on KruMath Supabase
+[ ] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY set at build time (same project as KruMath)
 [ ] npm run deploy → Worker name poster-canvas
 [ ] Cloudflare route: krumath.com/poster-canvas* → poster-canvas
-[ ] Smoke: signed-out can edit; Export/Add Logo → sign-in; after login actions work
+[ ] Smoke: unsigned → /sign-in?returnUrl=/poster-canvas
+[ ] Smoke: signed-in → studio; Account shows user; Export works
+[ ] Smoke: edit → wait ≥2.5s → reload restores code from Supabase
+[ ] Smoke: logout from Account → sign-in again; /home also signed out
+[ ] Smoke: DB rows are text code only (no large base64 exports/logos)
 [ ] Assets load from /poster-canvas/assets/...
 [ ] Home card on krumath.com/home links to /poster-canvas (edit KruMath monorepo separately)
+```
+
+### Handoff (integration §20)
+
+```text
+Project name: Poster Studio / poster-canvas
+Project slug: poster-canvas
+GitHub: https://github.com/sokna492-km/poster-canvas
+Cloudflare Worker name: poster-canvas
+Production URL: https://krumath.com/poster-canvas
+Authentication model: Hard
+Supabase project: Existing KruMath Supabase
+Required environment variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_BASE_PATH=/poster-canvas
+Required database tables/policies: poster_canvas_projects + RLS (auth.uid = user_id)
+Cloudflare route: krumath.com/poster-canvas*
 ```
 
 ### KruMath home card (operator — separate PR)
@@ -69,7 +112,7 @@ configureApp({
 });
 ```
 
-Call `configureApp()` once before rendering `<PosterStudio />`.
+Call `configureApp()` once before rendering `<PosterStudio />`. Defaults: DEV → local repository; production → Supabase codes repository.
 
 ## Project model
 
@@ -91,11 +134,7 @@ interface PosterProject {
 }
 ```
 
-Maps 1:1 to a future database record. Older records without `assets` / `logoSlot` are normalized on read.
-
-## Code repository (future)
-
-`CodeRepository` in `src/core/types/index.ts` is reserved for GitHub/remote code sources. The MVP uses local storage only.
+Cloud rows map to the same fields except `assets` (logo binaries stay session-only in the browser).
 
 ## Environment
 

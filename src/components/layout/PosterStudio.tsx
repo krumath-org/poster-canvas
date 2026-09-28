@@ -12,6 +12,7 @@ import { TemplatesDialog } from "@/components/templates/TemplatesDialog";
 import { usePreviewRender } from "@/hooks/usePreviewRender";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useSandboxBridge } from "@/hooks/useSandboxBridge";
+import { useAutosaveProject } from "@/hooks/useAutosaveProject";
 import { hasCompletedOnboarding } from "@/lib/onboarding";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUiStore } from "@/stores/uiStore";
@@ -20,25 +21,36 @@ export function PosterStudio() {
   const { bridge, iframeRef } = useSandboxBridge();
   const initTheme = useUiStore((s) => s.setTheme);
   const setOnboardingOpen = useUiStore((s) => s.setOnboardingOpen);
+  const loadProjects = useProjectStore((s) => s.loadProjects);
+  const openProject = useProjectStore((s) => s.openProject);
   const newProject = useProjectStore((s) => s.newProject);
-  const current = useProjectStore((s) => s.current);
 
   const initialized = useRef(false);
   const onboardingChecked = useRef(false);
 
   useKeyboardShortcuts();
   usePreviewRender(bridge);
+  useAutosaveProject();
 
   useEffect(() => {
     initTheme(useUiStore.getState().theme);
   }, [initTheme]);
 
+  // Open the most recently updated project, or create one. Avoids flooding
+  // Supabase with a new blank row on every production reload.
   useEffect(() => {
-    if (!initialized.current && !current) {
-      initialized.current = true;
-      void newProject();
-    }
-  }, [current, newProject]);
+    if (initialized.current) return;
+    initialized.current = true;
+    void (async () => {
+      await loadProjects();
+      const projects = useProjectStore.getState().projects;
+      if (projects.length > 0) {
+        await openProject(projects[0]!.id);
+        return;
+      }
+      await newProject();
+    })();
+  }, [loadProjects, openProject, newProject]);
 
   useEffect(() => {
     if (onboardingChecked.current) return;

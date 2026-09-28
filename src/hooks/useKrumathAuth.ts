@@ -1,8 +1,8 @@
+import { createClientOnlyFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 import { isPlayableUser } from "@/lib/authUser";
-import { getBrowserUser, getSupabaseBrowserClient, signOutBrowser } from "@/lib/supabase.client";
 
 export type KrumathAuthState = {
   user: User | null;
@@ -10,9 +10,33 @@ export type KrumathAuthState = {
   signOut: () => Promise<void>;
 };
 
+const readPlayableUser = createClientOnlyFn(async (): Promise<User | null> => {
+  const { getBrowserUser } = await import("@/lib/supabase.client");
+  const u = await getBrowserUser();
+  return isPlayableUser(u) ? u : null;
+});
+
+const subscribeAuth = createClientOnlyFn(
+  async (onChange: (user: User | null) => void): Promise<() => void> => {
+    const { getSupabaseBrowserClient } = await import("@/lib/supabase.client");
+    const {
+      data: { subscription },
+    } = getSupabaseBrowserClient().auth.onAuthStateChange((_event, session: Session | null) => {
+      const next = session?.user ?? null;
+      onChange(isPlayableUser(next) ? next : null);
+    });
+    return () => subscription.unsubscribe();
+  },
+);
+
+const signOutShared = createClientOnlyFn(async (): Promise<void> => {
+  const { signOutBrowser } = await import("@/lib/supabase.client");
+  await signOutBrowser();
+});
+
 /**
  * Live KruMath account for the Account menu.
- * Hard Gate already ensures a playable user in production; this keeps the header in sync.
+ * All supabase.client access goes through createClientOnlyFn for SSR safety.
  */
 export function useKrumathAuth(): KrumathAuthState {
   const [user, setUser] = useState<User | null>(null);
@@ -26,31 +50,30 @@ export function useKrumathAuth(): KrumathAuthState {
     }
 
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
-    void getBrowserUser()
-      .then((u) => {
+    void (async () => {
+      try {
+        const u = await readPlayableUser();
         if (cancelled) return;
-        setUser(isPlayableUser(u) ? u : null);
+        setUser(u);
         setLoading(false);
-      })
-      .catch(() => {
+      } catch {
         if (cancelled) return;
         setUser(null);
         setLoading(false);
-      });
+      }
 
-    const {
-      data: { subscription },
-    } = getSupabaseBrowserClient().auth.onAuthStateChange((_event, session) => {
-      if (cancelled) return;
-      const next = session?.user ?? null;
-      setUser(isPlayableUser(next) ? next : null);
-      setLoading(false);
-    });
+      unsubscribe = await subscribeAuth((next) => {
+        if (cancelled) return;
+        setUser(next);
+        setLoading(false);
+      });
+    })();
 
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
@@ -59,7 +82,7 @@ export function useKrumathAuth(): KrumathAuthState {
       setUser(null);
       return;
     }
-    await signOutBrowser();
+    await signOutShared();
     setUser(null);
   }, []);
 

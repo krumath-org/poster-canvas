@@ -18,7 +18,7 @@ async function requireUserId(): Promise<string> {
 
 /**
  * Cloud persistence for signed-in KruMath users (Hard Gate production path).
- * Stores poster source code and layout metadata only.
+ * `.client.ts` so SSR import-protection never pulls `supabase.client` into the server bundle.
  */
 export class SupabaseProjectRepository implements ProjectRepository {
   async getProjects(): Promise<PosterProject[]> {

@@ -27,6 +27,7 @@ export function ProjectManagerDialog() {
   const deleteProject = useProjectStore((s) => s.deleteProject);
   const duplicateProject = useProjectStore((s) => s.duplicateProject);
   const renameProject = useProjectStore((s) => s.renameProject);
+  const lockProjectName = useProjectStore((s) => s.lockProjectName);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -34,6 +35,13 @@ export function ProjectManagerDialog() {
   useEffect(() => {
     if (open) void loadProjects();
   }, [open, loadProjects]);
+
+  const commitRename = () => {
+    if (!renameValue.trim() || !renameId) return;
+    if (current?.id === renameId) lockProjectName();
+    void renameProject(renameValue.trim(), renameId);
+    setRenameId(null);
+  };
 
   return (
     <>
@@ -147,21 +155,10 @@ export function ProjectManagerDialog() {
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && renameValue.trim() && renameId) {
-                void renameProject(renameValue.trim(), renameId);
-                setRenameId(null);
-              }
+              if (e.key === "Enter") commitRename();
             }}
           />
-          <Button
-            type="button"
-            onClick={() => {
-              if (renameValue.trim() && renameId) {
-                void renameProject(renameValue.trim(), renameId);
-                setRenameId(null);
-              }
-            }}
-          >
+          <Button type="button" onClick={commitRename}>
             Save
           </Button>
         </DialogContent>

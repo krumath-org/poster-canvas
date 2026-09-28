@@ -9,17 +9,25 @@ import { usePreviewStore } from "@/stores/previewStore";
 import { useUiStore } from "@/stores/uiStore";
 import { toast } from "sonner";
 
+export const DEFAULT_PROJECT_NAME = "Untitled Poster";
+
 interface ProjectState {
   current: PosterProject | null;
   projects: PosterProject[];
   loading: boolean;
   error: string | null;
+  /** Session-only: when true, auto-title from code is disabled. */
+  nameLocked: boolean;
   loadProjects: () => Promise<void>;
   openProject: (id: string) => Promise<void>;
   newProject: (name?: string, width?: number, height?: number) => Promise<void>;
   saveProject: (options?: { quiet?: boolean }) => Promise<boolean>;
   duplicateProject: () => Promise<void>;
   renameProject: (name: string, id?: string) => Promise<void>;
+  /** In-memory rename for autosave; does not lock or hit the repository. */
+  setCurrentName: (name: string) => void;
+  /** Stop auto-titling after the user edits the name. */
+  lockProjectName: () => void;
   deleteProject: (id: string) => Promise<void>;
   setSize: (width: number, height: number) => void;
   loadTemplate: (code: string, width: number, height: number, name?: string) => void;
@@ -38,7 +46,7 @@ function markProjectDirty(): void {
 }
 
 function createBlankProject(
-  name = "Untitled Poster",
+  name = DEFAULT_PROJECT_NAME,
   width = DEFAULT_SIZE.width,
   height = DEFAULT_SIZE.height,
 ): PosterProject {
@@ -61,6 +69,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   projects: [],
   loading: false,
   error: null,
+  nameLocked: false,
 
   loadProjects: async () => {
     set({ loading: true, error: null });
@@ -85,7 +94,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       }
       useEditorStore.getState().resetCode(project.code);
       usePreviewStore.getState().reloadSandbox();
-      set({ current: project, loading: false });
+      set({
+        current: project,
+        loading: false,
+        nameLocked: project.name !== DEFAULT_PROJECT_NAME,
+      });
     } catch (err) {
       const message = String(err);
       set({ loading: false, error: message });
@@ -105,7 +118,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       useEditorStore.getState().resetCode(project.code);
       usePreviewStore.getState().reloadSandbox();
       const projects = await getProjectRepository().getProjects();
-      set({ current: project, projects, loading: false });
+      set({ current: project, projects, loading: false, nameLocked: false });
     } catch (err) {
       const message = String(err);
       set({ loading: false, error: message });
@@ -173,7 +186,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       useEditorStore.getState().resetCode(copy.code);
       usePreviewStore.getState().reloadSandbox();
       const projects = await getProjectRepository().getProjects();
-      set({ current: copy, projects, loading: false });
+      set({ current: copy, projects, loading: false, nameLocked: true });
     } catch (err) {
       set({ loading: false, error: String(err) });
     }
@@ -198,6 +211,19 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
+  setCurrentName: (name) => {
+    const { current } = get();
+    if (!current || current.name === name) return;
+    set({
+      current: { ...current, name, updatedAt: now() },
+    });
+    markProjectDirty();
+  },
+
+  lockProjectName: () => {
+    set({ nameLocked: true });
+  },
+
   deleteProject: async (id) => {
     set({ loading: true, error: null });
     try {
@@ -207,7 +233,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       if (current?.id === id) {
         useEditorStore.getState().resetCode(STARTER_CODE);
         usePreviewStore.getState().reloadSandbox();
-        set({ current: null, projects, loading: false });
+        set({ current: null, projects, loading: false, nameLocked: false });
       } else {
         set({ projects, loading: false });
       }
@@ -237,13 +263,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         name: name ?? current.name,
         updatedAt: now(),
       };
-      set({ current: updated });
+      set({ current: updated, nameLocked: true });
     } else {
       const ts = now();
       set({
         current: {
           id: crypto.randomUUID(),
-          name: name ?? "Untitled Poster",
+          name: name ?? DEFAULT_PROJECT_NAME,
           code,
           width,
           height,
@@ -252,6 +278,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           assets: {},
           logoSlot: null,
         },
+        nameLocked: true,
       });
     }
     useEditorStore.getState().resetCode(code);

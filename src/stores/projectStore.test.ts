@@ -19,6 +19,7 @@ describe("projectStore", () => {
       projects: [],
       loading: false,
       error: null,
+      nameLocked: false,
     });
     useEditorStore.setState({ code: "", dirty: false, runNonce: 0 });
   });
@@ -32,6 +33,37 @@ describe("projectStore", () => {
     expect(current?.name).toBe("Test");
     expect(current?.code).toContain("export default function Poster");
     expect(useEditorStore.getState().dirty).toBe(false);
+  });
+
+  it("setCurrentName updates in memory and marks dirty without locking", async () => {
+    await useProjectStore.getState().newProject();
+    expect(useProjectStore.getState().nameLocked).toBe(false);
+    useEditorStore.getState().markSaved();
+
+    useProjectStore.getState().setCurrentName("From Code");
+    expect(useProjectStore.getState().current?.name).toBe("From Code");
+    expect(useProjectStore.getState().nameLocked).toBe(false);
+    expect(useEditorStore.getState().dirty).toBe(true);
+  });
+
+  it("locks name on template load and unlocks for untitled opens", async () => {
+    await useProjectStore.getState().newProject();
+    useProjectStore
+      .getState()
+      .loadTemplate("export default function Poster(){ return <div/> }", 800, 800, "Template");
+    expect(useProjectStore.getState().nameLocked).toBe(true);
+
+    useProjectStore.getState().lockProjectName();
+    expect(useProjectStore.getState().nameLocked).toBe(true);
+
+    await useProjectStore.getState().newProject();
+    expect(useProjectStore.getState().nameLocked).toBe(false);
+
+    await useProjectStore.getState().saveProject();
+    const id = useProjectStore.getState().current!.id;
+    // Untitled stays unlocked; a custom name would lock on open.
+    await useProjectStore.getState().openProject(id);
+    expect(useProjectStore.getState().nameLocked).toBe(false);
   });
 
   it("setLogo initializes logoSlot and marks dirty", async () => {

@@ -13,6 +13,7 @@ import { usePreviewRender } from "@/hooks/usePreviewRender";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useSandboxBridge } from "@/hooks/useSandboxBridge";
 import { useAutosaveProject } from "@/hooks/useAutosaveProject";
+import { useAutoProjectTitle } from "@/hooks/useAutoProjectTitle";
 import { hasCompletedOnboarding } from "@/lib/onboarding";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUiStore } from "@/stores/uiStore";
@@ -31,6 +32,7 @@ export function PosterStudio() {
   useKeyboardShortcuts();
   usePreviewRender(bridge);
   useAutosaveProject();
+  useAutoProjectTitle();
 
   useEffect(() => {
     initTheme(useUiStore.getState().theme);

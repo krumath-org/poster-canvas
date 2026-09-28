@@ -30,7 +30,7 @@ import { githubRepoUrl, krumathHomeUrl, krumathPricingUrl } from "@/lib/krumathU
 import { publicUrl } from "@/lib/publicUrl";
 import { useMinWidth, useViewportTier, VIEWPORT_XL } from "@/hooks/use-viewport-tier";
 import { useEditorStore } from "@/stores/editorStore";
-import { useProjectStore } from "@/stores/projectStore";
+import { DEFAULT_PROJECT_NAME, useProjectStore } from "@/stores/projectStore";
 import { useUiStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
 import type { SandboxBridge } from "@/core/renderer";
@@ -48,6 +48,7 @@ export function AppHeader({ bridge }: AppHeaderProps) {
   const dirty = useEditorStore((s) => s.dirty);
   const current = useProjectStore((s) => s.current);
   const renameProject = useProjectStore((s) => s.renameProject);
+  const lockProjectName = useProjectStore((s) => s.lockProjectName);
   const saveProject = useProjectStore((s) => s.saveProject);
   const newProject = useProjectStore((s) => s.newProject);
   const theme = useUiStore((s) => s.theme);
@@ -56,14 +57,15 @@ export function AppHeader({ bridge }: AppHeaderProps) {
   const setTemplatesOpen = useUiStore((s) => s.setTemplatesOpen);
   const setSizePickerOpen = useUiStore((s) => s.setSizePickerOpen);
   const setOnboardingOpen = useUiStore((s) => s.setOnboardingOpen);
-  const [name, setName] = useState(current?.name ?? "Untitled Poster");
+  const [name, setName] = useState(current?.name ?? DEFAULT_PROJECT_NAME);
   const renameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setName(current?.name ?? "Untitled Poster");
+    setName(current?.name ?? DEFAULT_PROJECT_NAME);
   }, [current?.name]);
 
   const onNameChange = (value: string) => {
+    lockProjectName();
     setName(value);
     if (renameTimer.current) clearTimeout(renameTimer.current);
     renameTimer.current = setTimeout(() => {

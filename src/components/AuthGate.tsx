@@ -36,18 +36,23 @@ export function AuthGate({ initial, routerPath, children }: AuthGateProps) {
     if (state.status === "authenticated") return;
 
     let cancelled = false;
+    // Fail closed if resolution never completes (e.g. storage/lock stall).
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      window.location.replace(signInUrl(publicAppPath(routerPath)));
+    }, 8000);
 
     void (async () => {
       if (state.status === "unauthenticated") {
+        window.clearTimeout(timeoutId);
         window.location.replace(signInUrl(publicAppPath(routerPath)));
         return;
       }
 
       // status === "unknown": resolve from shared localStorage session.
-      // A session that cannot be read is treated as signed out: failing closed beats
-      // leaving the user on a spinner forever.
       const resolved = await resolvePlayableAuth().catch(() => null);
       if (cancelled) return;
+      window.clearTimeout(timeoutId);
       if (resolved && resolved.status === "authenticated") {
         setState(resolved);
         return;
@@ -57,6 +62,7 @@ export function AuthGate({ initial, routerPath, children }: AuthGateProps) {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
     };
   }, [state.status, routerPath]);
 

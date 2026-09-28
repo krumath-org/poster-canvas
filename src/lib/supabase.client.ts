@@ -26,6 +26,11 @@ export function getSupabaseBrowserClient(): SupabaseClient {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+      flowType: "pkce",
+      // Match KruMath apps/web: bypass navigator.locks so getSession cannot hang
+      // the Hard Gate spinner ("AbortError: Lock broken by another request").
+      lock: async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> =>
+        await fn(),
     },
   });
   return client;

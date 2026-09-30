@@ -1,8 +1,13 @@
 import type { Diagnostic } from "@/core/types";
 
+export interface PreprocessFeatures {
+  r3f: boolean;
+}
+
 export interface PreprocessResult {
   code: string;
   diagnostics: Diagnostic[];
+  features: PreprocessFeatures;
 }
 
 const IMPORT_RE = /^[ \t]*import\s+([\s\S]*?)\s*from\s*["']([^"']+)["'];?[ \t]*$/gm;
@@ -10,8 +15,77 @@ const BARE_IMPORT_RE = /^[ \t]*import\s*["']([^"']+)["'];?[ \t]*$/gm;
 const REACT_MODULES = new Set(["react", "react-dom", "react-dom/client", "react/jsx-runtime"]);
 const CORE_MODULES = new Set(["@poster/core", "poster-studio", "@/core/poster", "./poster"]);
 
+/** Sandbox Poster3D namespace keys for allowlisted 3D packages. */
+const R3F_MODULES: Record<string, string> = {
+  three: "THREE",
+  "@react-three/fiber": "fiber",
+  "@react-three/drei": "drei",
+  "@react-three/postprocessing": "postprocessing",
+  "@react-three/csg": "csg",
+  "@react-spring/three": "spring",
+  "@use-gesture/react": "gesture",
+  maath: "maath",
+  leva: "leva",
+  "@theatre/core": "theatre",
+  "@theatre/r3f": "theatreR3f",
+};
+
+const MAATH_SUBPATH_RE = /^maath\//;
+
 function lineOf(source: string, index: number): number {
   return source.slice(0, index).split("\n").length;
+}
+
+function resolveR3fBinding(module: string): string | null {
+  if (R3F_MODULES[module]) return R3F_MODULES[module];
+  // Common maath subpaths → root namespace (bundle exports the package entry).
+  if (MAATH_SUBPATH_RE.test(module)) return "maath";
+  return null;
+}
+
+/**
+ * Rewrite `import … from "mod"` into Poster3D / PosterCore locals.
+ * Supports default, namespace (* as), and named imports.
+ */
+function rewriteImportClause(clause: string, bindingExpr: string): string {
+  const trimmed = clause.trim();
+  const parts: string[] = [];
+
+  // import * as Name
+  const ns = trimmed.match(/^\*\s+as\s+([A-Za-z_$][\w$]*)$/);
+  if (ns) {
+    return `const ${ns[1]} = ${bindingExpr};`;
+  }
+
+  // import Default
+  // import Default, { a, b }
+  // import { a, b }
+  // import { a as b }
+  const defaultAndNamed = trimmed.match(
+    /^([A-Za-z_$][\w$]*)\s*,\s*\{([\s\S]*)\}$/,
+  );
+  if (defaultAndNamed) {
+    parts.push(`const ${defaultAndNamed[1]} = ${bindingExpr};`);
+    parts.push(`const {${defaultAndNamed[2]}} = ${bindingExpr};`);
+    return parts.join("\n");
+  }
+
+  const namedOnly = trimmed.match(/^\{([\s\S]*)\}$/);
+  if (namedOnly) {
+    return `const {${namedOnly[1]}} = ${bindingExpr};`;
+  }
+
+  const defaultOnly = trimmed.match(/^([A-Za-z_$][\w$]*)$/);
+  if (defaultOnly) {
+    return `const ${defaultOnly[1]} = ${bindingExpr};`;
+  }
+
+  // Fallback: treat whole clause as named destructure target expression
+  return `const ${trimmed} = ${bindingExpr};`;
+}
+
+function coreImportIncludesCanvas3D(clause: string): boolean {
+  return /\bCanvas3D\b/.test(clause);
 }
 
 /** True when the buffer looks like TSX/JS poster code rather than raw math. */
@@ -84,6 +158,7 @@ export function wrapMathOnlyPoster(mathSource: string): string {
  */
 export function preprocess(source: string): PreprocessResult {
   const diagnostics: Diagnostic[] = [];
+  const features: PreprocessFeatures = { r3f: false };
   const trimmed = source.trim();
 
   if (trimmed && isMathOnlyInput(trimmed)) {
@@ -93,11 +168,15 @@ export function preprocess(source: string): PreprocessResult {
       message:
         "Math-only input detected — wrapped into a poster automatically. For full layouts, use `export default function Poster() { ... }`.",
     });
-    return { code: wrapMathOnlyPoster(trimmed), diagnostics };
+    return { code: wrapMathOnlyPoster(trimmed), diagnostics, features };
   }
 
   let code = source.replace(BARE_IMPORT_RE, (match, module: string) => {
     if (module.endsWith(".css")) return "";
+    if (resolveR3fBinding(module)) {
+      features.r3f = true;
+      return "";
+    }
     diagnostics.push({
       severity: "warning",
       kind: "preprocess",
@@ -111,12 +190,31 @@ export function preprocess(source: string): PreprocessResult {
     // Drop the import so we do not emit a second `const { useRef } = …` that
     // would collide with those locals.
     if (REACT_MODULES.has(module)) return "";
+
     if (CORE_MODULES.has(module)) {
+      if (coreImportIncludesCanvas3D(clause)) {
+        features.r3f = true;
+      }
       const named = clause.match(/\{([\s\S]*?)\}/);
       if (named) return `const {${named[1]}} = PosterCore;`;
       const def = clause.trim().split(",")[0]?.trim();
       return def ? `const ${def} = PosterCore;` : "";
     }
+
+    const r3fKey = resolveR3fBinding(module);
+    if (r3fKey) {
+      features.r3f = true;
+      if (MAATH_SUBPATH_RE.test(module) && module !== "maath") {
+        diagnostics.push({
+          severity: "warning",
+          kind: "preprocess",
+          message: `Import from "${module}" is mapped to the maath package root (Poster3D.maath). Prefer \`import { … } from "maath"\`.`,
+          line: lineOf(source, offset),
+        });
+      }
+      return rewriteImportClause(clause, `Poster3D.${r3fKey}`);
+    }
+
     diagnostics.push({
       severity: "warning",
       kind: "preprocess",
@@ -145,5 +243,5 @@ export function preprocess(source: string): PreprocessResult {
     });
   }
 
-  return { code, diagnostics };
+  return { code, diagnostics, features };
 }

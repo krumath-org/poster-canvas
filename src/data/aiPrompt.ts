@@ -6,7 +6,8 @@ export type AiPromptTemplateId =
   | "education"
   | "quote"
   | "product"
-  | "slide";
+  | "slide"
+  | "3d-scene";
 
 export interface AiPromptTemplate {
   id: AiPromptTemplateId;
@@ -55,7 +56,11 @@ function buildPrompt(opts: {
 Requirements:
 - One default-exported Poster component
 - Fixed size: ${opts.width} × ${opts.height} (${opts.sizeHint})
-- HTML + Tailwind and/or @poster/core; no React import; no other packages
+- Default stack: HTML + Tailwind and/or @poster/core; no React import
+- When the brief needs 3D, you MAY also import from: three, @react-three/fiber, @react-three/drei, @react-three/postprocessing, @react-three/csg, @react-spring/three, @use-gesture/react, maath, leva, @theatre/core, @theatre/r3f
+- Prefer import { Canvas3D } from "@poster/core" for WebGL scenes (export-safe). Keep 3D inside the canvas bounds. Overlay typography/Logo with @poster/core when useful.
+- 3D quality rules: no leva / Theatre studio panels in the final composition; freeze motion at a clear hero pose for static posters; do not rely on pointer/OrbitControls for the final look; GLB models via useGLTF / JSX meshes (gltfjsx-style), not a gltfjsx runtime import
+- Prefer default sandbox fonts; do not list Battambang/Hanuman in fontFamily. font-mono is for Latin/math only; Khmer on those nodes still uses Kantumruy via the sandbox stack
 - Fill the whole canvas
 - ${opts.look}
 - Default colors: Modern White EdTech theme — centered on #2563EB royal blue with sky-blue gradients (user can change via Colors below)
@@ -91,6 +96,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Labels / badges: 20–24 px",
           "CTA / website: 30–38 px",
         ],
+        extras: ["3D product or abstract hero OK when it helps the brief — use Canvas3D"],
         detailsTitle: "Poster details",
         details: [
           "Type: [event / social post / announcement / quote / product / educational]",
@@ -323,6 +329,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Labels / badges: 20–24 px",
           "CTA: 30–40 px",
         ],
+        extras: ["3D product hero OK — Canvas3D + simple mesh or useGLTF; keep CTA and type as HTML/@poster/core"],
         detailsTitle: "Product details",
         details: [
           "Product: [name]",
@@ -363,6 +370,7 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
         ],
         extras: [
           "Title + 3–5 bullets or one visual max; leave margin for projection",
+          "3D diagram / product inset OK with Canvas3D when it clarifies the idea",
         ],
         detailsTitle: "Slide details",
         details: [
@@ -371,6 +379,49 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplate[] = [
           "Footer: [presenter / date / page]",
           "Language: [English / Khmer / both]",
           "Style: [corporate / minimal / bold / dark]",
+          "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
+          "Must include: [anything important]",
+          "Must avoid: [anything you don't want]",
+        ],
+      }),
+  },
+  {
+    id: "3d-scene",
+    label: "3D scene poster",
+    description: "1080 × 1350 · 3D hero",
+    width: 1080,
+    height: 1350,
+    sizeHint: "Instagram 4:5 with WebGL hero",
+    build: (width, height) =>
+      buildPrompt({
+        role: "an expert 3D motion-graphics and poster designer",
+        task: "a poster with a WebGL 3D hero",
+        width,
+        height,
+        sizeHint: "Instagram 4:5 with WebGL hero",
+        look: "One strong 3D focal object, clean lighting, bold type overlay — print-ready static frame",
+        fonts: [
+          "Main headline: 64–80 px",
+          "Subhead: 32–40 px",
+          "Body / features: 26–32 px",
+          "Labels / badges: 20–24 px",
+          "CTA: 28–36 px",
+        ],
+        extras: [
+          "Use import { Poster, Text, Logo, Canvas3D } from \"@poster/core\" plus @react-three/fiber / drei as needed",
+          "Example: Canvas3D with ambient + directional light, a mesh or useGLTF model, Environment preset, ContactShadows; frameloop demand; freeze a hero pose",
+          "Do not include leva panels or Theatre studio UI in the composition",
+        ],
+        detailsTitle: "3D poster details",
+        details: [
+          "Subject: [product / abstract shape / logo mark / character]",
+          "3D look: [metallic / clay / glass / toy / technical]",
+          "Camera / pose: [front / 3/4 / top-down]",
+          "Headline: [MAIN TITLE]",
+          "Supporting copy: [optional]",
+          "CTA: [optional]",
+          "Language: [English / Khmer / both]",
+          "Style: [minimal / bold / luxury / playful / dark]",
           "Colors: [leave blank for default Modern White EdTech (#2563EB + sky-blue gradients), or describe your own]",
           "Must include: [anything important]",
           "Must avoid: [anything you don't want]",

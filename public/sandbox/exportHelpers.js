@@ -511,7 +511,7 @@ export function preparePosterDomForExport(root) {
       font-family: "Kantumruy Pro", "IBM Plex Sans", system-ui, sans-serif !important;
     }
     #poster-root .font-mono, #poster-root [class*="font-mono"] {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Kantumruy Pro", monospace !important;
     }
   `;
   document.head.appendChild(style);

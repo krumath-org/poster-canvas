@@ -2,8 +2,9 @@
  * Poster component library available to user code as `@poster/core`.
  * Runs inside the sandboxed preview iframe only.
  */
-import React from "https://esm.sh/react@18.3.1";
+import React from "https://esm.sh/react@19.2.0";
 import { splitMathSegments } from "./splitMathSegments.js";
+
 
 const h = React.createElement;
 
@@ -773,5 +774,19 @@ export function Table({ columns = [], rows = [], fontSize = 28, className = "", 
         ),
       ),
     ),
+  );
+}
+
+/**
+ * Export-safe R3F Canvas. The real implementation is installed on
+ * `globalThis.__posterCanvas3D` when the Poster3D vendor bundle loads.
+ */
+export function Canvas3D(props) {
+  const Impl = typeof globalThis !== "undefined" ? globalThis.__posterCanvas3D : null;
+  if (typeof Impl === "function") {
+    return h(Impl, props);
+  }
+  throw new Error(
+    "Canvas3D requires the 3D runtime. Import Canvas3D from @poster/core (or use @react-three/fiber) and Run again.",
   );
 }

@@ -99,6 +99,7 @@ export default defineConfig(({ mode }) => {
         "react-dom/client",
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
+        "d3-geo",
       ],
       ignoreOutdatedRequests: true,
     },
@@ -107,7 +108,11 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       watch: {
         // Large font binaries lock on Windows and crash Vite's FSWatcher (EBUSY).
-        ignored: ["**/public/sandbox/vendor/fonts/**"],
+        ignored: [
+          "**/public/sandbox/vendor/fonts/**",
+          "**/public/sandbox/vendor/r3f/**",
+          "**/dist-sandbox-r3f/**",
+        ],
       },
     },
     plugins: [

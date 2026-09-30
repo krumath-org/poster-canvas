@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { AI_PROMPT_TEMPLATES, buildAiPrompt, buildPosterAiPrompt } from "./aiPrompt";
 
 describe("aiPrompt", () => {
-  it("exports eight templates", () => {
-    expect(AI_PROMPT_TEMPLATES).toHaveLength(8);
+  it("exports nine templates including 3d-scene", () => {
+    expect(AI_PROMPT_TEMPLATES).toHaveLength(9);
     expect(AI_PROMPT_TEMPLATES.map((t) => t.id)).toEqual([
       "poster",
       "financial",
@@ -13,6 +13,7 @@ describe("aiPrompt", () => {
       "quote",
       "product",
       "slide",
+      "3d-scene",
     ]);
   });
 
@@ -26,6 +27,7 @@ describe("aiPrompt", () => {
       quote: [1080, 1080],
       product: [1080, 1350],
       slide: [1920, 1080],
+      "3d-scene": [1080, 1350],
     };
     for (const template of AI_PROMPT_TEMPLATES) {
       const [w, h] = expected[template.id]!;
@@ -40,12 +42,18 @@ describe("aiPrompt", () => {
       expect(prompt).toContain("Do not split the code across messages");
       expect(prompt).toContain("#2563EB");
       expect(prompt).toContain("user can change");
+      expect(prompt).toContain("@react-three/fiber");
+      expect(prompt).toContain("Canvas3D");
+      expect(prompt).toContain("Battambang/Hanuman");
+      expect(prompt).toContain("font-mono");
+      expect(prompt).toContain("Kantumruy");
     }
   });
 
   it("buildAiPrompt defaults to the template size", () => {
     expect(buildAiPrompt("slide")).toContain("1920 × 1080");
     expect(buildAiPrompt("poster")).toContain("1080 × 1080");
+    expect(buildAiPrompt("3d-scene")).toContain("1080 × 1350");
     expect(buildPosterAiPrompt()).toBe(buildAiPrompt("poster"));
   });
 

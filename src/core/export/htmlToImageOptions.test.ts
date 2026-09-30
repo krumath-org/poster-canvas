@@ -3,6 +3,7 @@ import {
   buildHtmlToImageOptions,
   clearFontEmbedCSSCache,
   POSTER_FONT_CHECK_SPECS,
+  preparePosterDomForExport,
   waitForPosterFonts,
 } from "../../../public/sandbox/exportHelpers.js";
 
@@ -50,5 +51,23 @@ describe("html-to-image capture options", () => {
 
   it("waitForPosterFonts no-ops without document.fonts", async () => {
     await expect(waitForPosterFonts({ timeoutMs: 10 })).resolves.toBeUndefined();
+  });
+
+  it("preparePosterDomForExport keeps Kantumruy in the font-mono stack", () => {
+    const root = document.createElement("div");
+    root.id = "poster-root";
+    document.body.appendChild(root);
+
+    const restore = preparePosterDomForExport(root);
+    const style = document.querySelector("style[data-poster-export-fonts]");
+    expect(style).toBeTruthy();
+    const css = style?.textContent ?? "";
+    expect(css).toMatch(/\.font-mono/);
+    expect(css).toContain("Kantumruy Pro");
+    expect(css).toMatch(/font-mono[\s\S]*Kantumruy Pro[\s\S]*monospace/);
+
+    restore();
+    expect(document.querySelector("style[data-poster-export-fonts]")).toBeNull();
+    root.remove();
   });
 });

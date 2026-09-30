@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-sandbox-r3f
+public/sandbox/vendor/r3f/*.js
+public/sandbox/vendor/r3f/*.css
 .output
 .vinxi
 .tanstack/**
@@ -48,6 +51,11 @@ Thumbs.db
 *.sln
 *.sw?
 
+# Downloaded geographic data and local map sources
+geo-data/
+*.geojson
+!public/geo/*.geojson
+
 # Personal / agent files (safety net if ever copied into this repo)
 SOUL.md
 USER.md
@@ -56,3 +64,4 @@ AGENTS.md
 BOOTSTRAP.md
 HEARTBEAT.md
 memory/
+KRUMATH_PROJECT_INTEGRATION.md

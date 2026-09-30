@@ -15,6 +15,7 @@ export type ParentToSandboxMessage =
       height: number;
       assets?: PosterProjectAssets;
       logoSlot?: PosterLogoSlot | null;
+      features?: { r3f?: boolean };
     }
   | {
       target: "poster-sandbox";

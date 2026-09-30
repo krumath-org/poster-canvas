@@ -28,7 +28,7 @@ export function usePreviewRender(bridge: SandboxBridge | null): void {
       : null;
 
     usePreviewStore.getState().setStatus("compiling");
-    const { code: processed, diagnostics } = preprocess(code);
+    const { code: processed, diagnostics, features } = preprocess(code);
     const errors = diagnostics.filter((d) => d.severity === "error");
     if (errors.length > 0) {
       bridge.clear();
@@ -39,7 +39,7 @@ export function usePreviewRender(bridge: SandboxBridge | null): void {
     }
     usePreviewStore.getState().setStatus("rendering");
     usePreviewStore.getState().setDiagnostics(diagnostics);
-    bridge.render({ code: processed, width, height, assets, logoSlot });
+    bridge.render({ code: processed, width, height, assets, logoSlot, features });
   }, [
     bridge,
     runNonce,

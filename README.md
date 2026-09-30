@@ -63,19 +63,22 @@ Environment variables are loaded from `.env`. See [`.env.example`](.env.example)
 
 ## Scripts
 
-| Script              | Description                       |
-| ------------------- | --------------------------------- |
-| `npm run dev`       | Start the development server      |
-| `npm run build`     | Production build                  |
-| `npm run preview`   | Preview the production build      |
-| `npm run lint`      | Run ESLint                        |
-| `npm run format`    | Format with Prettier              |
-| `npm run test`      | Run unit tests (Vitest)           |
-| `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
+| Script                   | Description                              |
+| ------------------------ | ---------------------------------------- |
+| `npm run dev`            | Build Poster3D vendor + start Vite       |
+| `npm run build`          | Build Poster3D vendor + production app   |
+| `npm run build:sandbox-r3f` | Build same-origin R3F vendor for sandbox |
+| `npm run preview`        | Preview the production build             |
+| `npm run lint`           | Run ESLint                               |
+| `npm run format`         | Format with Prettier                     |
+| `npm run test`           | Run unit tests (Vitest)                  |
+| `npm run typecheck`      | TypeScript check (`tsc --noEmit`)        |
 
 ## Creating posters
 
 Export a React component and use `@poster/core` helpers or plain HTML / Tailwind. (`@poster/core` is a **sandbox virtual import** provided by the preview runtime — not an npm workspace package.)
+
+For WebGL posters, import `Canvas3D` from `@poster/core` and allowlisted R3F packages (`three`, `@react-three/fiber`, `@react-three/drei`, …). The sandbox lazy-loads a same-origin Poster3D bundle (`npm run build:sandbox-r3f`) only when those imports are present.
 
 ```tsx
 import { Poster, Text, Stack } from "@poster/core";

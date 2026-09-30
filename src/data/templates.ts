@@ -160,6 +160,223 @@ export default function App() {
 
 export const TEMPLATES: PosterTemplate[] = [
   {
+    id: "cambodia-provinces-map",
+    name: "Cambodia Provinces Map",
+    category: "Featured",
+    description: "ADM1 SVG choropleth with d3-geo; cache-busted GeoJSON and fixed ring winding.",
+    width: 1080,
+    height: 1080,
+    code: `export default function Poster() {
+  const [paths, setPaths] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Edit any province color here (name must match GeoJSON adm1_name).
+  const PROVINCE_COLORS = {
+    "Banteay Meanchey": "#38bdf8",
+    Battambang: "#0ea5e9",
+    "Kampong Cham": "#6366f1",
+    "Kampong Chhnang": "#8b5cf6",
+    "Kampong Speu": "#a855f7",
+    "Kampong Thom": "#d946ef",
+    Kampot: "#ec4899",
+    Kandal: "#f43f5e",
+    Kep: "#f97316",
+    "Koh Kong": "#eab308",
+    Kratie: "#84cc16",
+    "Mondul Kiri": "#22c55e",
+    "Oddar Meanchey": "#14b8a6",
+    Pailin: "#06b6d4",
+    "Phnom Penh": "#3b82f6",
+    "Preah Sihanouk": "#2563eb",
+    "Preah Vihear": "#4f46e5",
+    "Prey Veng": "#7c3aed",
+    Pursat: "#db2777",
+    "Ratanak Kiri": "#e11d48",
+    Siemreap: "#ea580c",
+    "Stung Treng": "#ca8a04",
+    "Svay Rieng": "#65a30d",
+    Takeo: "#16a34a",
+    "Tboung Khmum": "#0d9488",
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    function reverseExterior(geom) {
+      if (!geom) return geom;
+      if (geom.type === "Polygon") {
+        return {
+          ...geom,
+          coordinates: geom.coordinates.map((ring, i) =>
+            i === 0 ? ring.slice().reverse() : ring,
+          ),
+        };
+      }
+      if (geom.type === "MultiPolygon") {
+        return {
+          ...geom,
+          coordinates: geom.coordinates.map((poly) =>
+            poly.map((ring, i) => (i === 0 ? ring.slice().reverse() : ring)),
+          ),
+        };
+      }
+      return geom;
+    }
+
+    (async () => {
+      try {
+        const d3Geo = await import("https://esm.sh/d3-geo@3");
+        const res = await fetch("/poster-canvas/geo/cambodia-adm1.geojson?v=2");
+        if (!res.ok) throw new Error("Map request failed: " + res.status);
+
+        const raw = await res.json();
+        // HDX rings are sometimes clockwise; d3 then fills the whole SVG (blue square).
+        // Only flip when a feature looks inverted (area near a full sphere).
+        const features = raw.features.map((f) => {
+          const inverted = d3Geo.geoArea(f) > 1;
+          return inverted
+            ? { ...f, geometry: reverseExterior(f.geometry) }
+            : f;
+        });
+        const geoData = { type: "FeatureCollection", features };
+
+        const projection = d3Geo.geoMercator().fitSize([900, 900], geoData);
+        const pathGenerator = d3Geo.geoPath(projection);
+        const next = geoData.features.map((feature, idx) => {
+          const name = feature.properties?.adm1_name || "Province";
+          return {
+            key: idx,
+            d: pathGenerator(feature) || "",
+            name,
+            fill: PROVINCE_COLORS[name] || "#94a3b8",
+          };
+        });
+
+        if (!cancelled) setPaths(next);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load map");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="w-full h-full relative overflow-hidden bg-slate-50 text-slate-900 flex flex-col box-border select-none font-sans">
+      <div className="px-14 pt-12 pb-4">
+        <p className="text-sm font-semibold tracking-[0.2em] uppercase text-blue-700/80">
+          Kingdom of Cambodia
+        </p>
+        <h1 className="mt-2 text-5xl font-black tracking-tight">
+          25 Provinces
+        </h1>
+        <p className="mt-3 text-lg text-slate-600 max-w-2xl">
+          Each province has its own color — edit PROVINCE_COLORS in the code.
+        </p>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-10 pb-12">
+        {error ? (
+          <div className="text-red-500 text-lg">Map failed to load: {error}</div>
+        ) : paths.length === 0 ? (
+          <div className="text-slate-400 text-lg">Loading map...</div>
+        ) : (
+          <svg
+            viewBox="0 0 900 900"
+            className="w-full h-full max-h-[900px]"
+            data-poster-layer="shape"
+            data-poster-layer-name="Cambodia Map"
+          >
+            {paths.map((p) => (
+              <path
+                key={p.key}
+                d={p.d}
+                fill={p.fill}
+                stroke="#ffffff"
+                strokeWidth={1.5}
+              >
+                <title>{p.name}</title>
+              </path>
+            ))}
+          </svg>
+        )}
+      </div>
+    </div>
+  );
+}
+`,
+  },
+  {
+    id: "3d-product-hero",
+    name: "3D Product Hero",
+    category: "3D",
+    description: "Hybrid Canvas3D mesh hero with @poster/core typography overlay.",
+    width: 1080,
+    height: 1350,
+    code: `import { Poster, Text, Canvas3D } from "@poster/core";
+import { Environment, ContactShadows, Center, Float } from "@react-three/drei";
+
+function HeroMesh() {
+  return (
+    <Float speed={1.2} rotationIntensity={0.35} floatIntensity={0.6}>
+      <mesh castShadow receiveShadow>
+        <icosahedronGeometry args={[1.15, 0]} />
+        <meshStandardMaterial color="#2563EB" metalness={0.35} roughness={0.28} />
+      </mesh>
+    </Float>
+  );
+}
+
+export default function PosterApp() {
+  return (
+    <Poster className="relative w-full h-full overflow-hidden bg-gradient-to-b from-slate-50 via-sky-50 to-blue-100 text-slate-900">
+      <div className="absolute inset-0">
+        <Canvas3D
+          camera={{ position: [0, 0.4, 4.2], fov: 42 }}
+          frameloop="demand"
+          gl={{ antialias: true }}
+        >
+          <color attach="background" args={["#eff6ff"]} />
+          <ambientLight intensity={0.55} />
+          <directionalLight position={[4, 6, 3]} intensity={1.15} castShadow />
+          <Environment preset="city" />
+          <Center>
+            <HeroMesh />
+          </Center>
+          <ContactShadows position={[0, -1.35, 0]} opacity={0.45} scale={8} blur={2.4} />
+        </Canvas3D>
+      </div>
+
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-14">
+        <div>
+          <Text size={22} className="tracking-[0.2em] uppercase text-blue-700/80 font-semibold">
+            Poster Studio · 3D
+          </Text>
+          <Text size={72} className="mt-4 font-black leading-[0.95] tracking-tight text-slate-900">
+            Shape
+            <br />
+            the future
+          </Text>
+        </div>
+        <div className="flex items-end justify-between gap-6">
+          <Text size={28} className="max-w-[22rem] text-slate-600 leading-snug">
+            Export-safe WebGL hero with Canvas3D — frozen for print-ready PNG.
+          </Text>
+          <div className="rounded-full bg-[#2563EB] text-white px-8 py-4 text-[28px] font-bold shadow-lg shadow-blue-500/30">
+            Learn more
+          </div>
+        </div>
+      </div>
+    </Poster>
+  );
+}
+`,
+  },
+  {
     id: "website-ui-mockup",
     name: "Website UI Mockup",
     category: "UI",

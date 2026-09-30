@@ -14,6 +14,18 @@ Before each raster capture the sandbox:
 
 PNG / JPG / WebP / PDF / PSD / PPTX all share these options so Khmer metrics match the live preview.
 
+## WebGL / 3D capture
+
+html-to-image cannot read WebGL buffers. Before every DOM capture the sandbox:
+
+1. Hides leva / Theatre studio debug chrome
+2. Advances registered R3F canvases once
+3. Snapshots each WebGL canvas with `toDataURL` into a temporary `<img>`, hides the live canvas
+4. Runs the existing capture path
+5. Restores canvases and debug UI in `finally`
+
+Use `Canvas3D` from `@poster/core` so `preserveDrawingBuffer` is on and canvases register for freeze. **3D is always rasterized** in exports (including SVG — the GL frame becomes an embedded bitmap, not editable meshes).
+
 ## Formats
 
 | Group    | Format           | Notes                                                                                |

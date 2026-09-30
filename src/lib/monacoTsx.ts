@@ -91,6 +91,94 @@ declare module "@poster/core" {
   export const Logo: any;
   export const Math: any;
   export const BlockMath: any;
+  export const Image: any;
+  export const Canvas3D: any;
+}
+
+declare module "three" {
+  const THREE: any;
+  export = THREE;
+}
+
+declare module "@react-three/fiber" {
+  export const Canvas: any;
+  export function useFrame(...args: any[]): any;
+  export function useThree(...args: any[]): any;
+  export function useLoader(...args: any[]): any;
+  export function extend(...args: any[]): any;
+  export const act: any;
+}
+
+declare module "@react-three/drei" {
+  export const OrbitControls: any;
+  export const Environment: any;
+  export const Center: any;
+  export const Float: any;
+  export const ContactShadows: any;
+  export const PresentationControls: any;
+  export const Stage: any;
+  export const Text: any;
+  export const Html: any;
+  export function useGLTF(...args: any[]): any;
+  export function useTexture(...args: any[]): any;
+  const drei: any;
+  export default drei;
+}
+
+declare module "@react-three/postprocessing" {
+  export const EffectComposer: any;
+  export const Bloom: any;
+  export const Vignette: any;
+  export const Noise: any;
+  export const DepthOfField: any;
+}
+
+declare module "@react-three/csg" {
+  export const Geometry: any;
+  export const Base: any;
+  export const Addition: any;
+  export const Subtraction: any;
+  export const Intersection: any;
+}
+
+declare module "@react-spring/three" {
+  export const a: any;
+  export const animated: any;
+  export function useSpring(...args: any[]): any;
+  export function useSprings(...args: any[]): any;
+}
+
+declare module "@use-gesture/react" {
+  export function useDrag(...args: any[]): any;
+  export function useGesture(...args: any[]): any;
+  export function usePinch(...args: any[]): any;
+}
+
+declare module "maath" {
+  export const easing: any;
+  export const misc: any;
+  export const random: any;
+  export const three: any;
+}
+
+declare module "leva" {
+  export function useControls(...args: any[]): any;
+  export function button(...args: any[]): any;
+  export const folder: any;
+  export const Leva: any;
+}
+
+declare module "@theatre/core" {
+  export function getProject(...args: any[]): any;
+  export function types(...args: any[]): any;
+  const theatre: any;
+  export default theatre;
+}
+
+declare module "@theatre/r3f" {
+  export const editable: any;
+  export const SheetProvider: any;
+  export function useCurrentSheet(...args: any[]): any;
 }
 `.trim();
 

@@ -29,7 +29,7 @@ describe("clientPlayableAuthState", () => {
     });
   });
 
-  // The browser can read the shared localStorage session, so "no session" is final here.
+  // The browser reads the shared session cookie, so "no session" is final here.
   it("reports a missing session as unauthenticated", () => {
     expect(clientPlayableAuthState(null)).toEqual({ status: "unauthenticated" });
   });
@@ -42,9 +42,9 @@ describe("clientPlayableAuthState", () => {
 });
 
 describe("serverPlayableAuthState", () => {
-  // Regression guard for the production outage: krumath.com stores its session in
-  // localStorage, so a Worker that sees no session cookie must not conclude that the
-  // player is signed out and bounce them to /sign-in.
+  // Regression guard for the production outage: the Worker can see no user on a fresh
+  // navigation even when a session exists, so it must not conclude that the player is
+  // signed out and bounce them to /sign-in.
   it("reports a missing cookie session as unknown, never unauthenticated", () => {
     expect(serverPlayableAuthState(null)).toEqual({ status: "unknown" });
   });

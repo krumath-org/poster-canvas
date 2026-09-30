@@ -25,9 +25,9 @@ type AuthGateProps = {
 /**
  * Nothing inside the studio renders until a KruMath account is confirmed.
  *
- * SSR reports `unknown` because krumath.com keeps its session in localStorage, which the
- * Worker cannot read. The browser resolves that here and redirects only when the absence
- * of a session is conclusive.
+ * SSR reports `unknown` because the Worker cannot be sure the cookie has been flushed
+ * onto a fresh navigation. The browser resolves that here and redirects only when the
+ * absence of a session is conclusive.
  */
 export function AuthGate({ initial, routerPath, children }: AuthGateProps) {
   const [state, setState] = useState<PlayableAuthState>(initial);
@@ -49,7 +49,7 @@ export function AuthGate({ initial, routerPath, children }: AuthGateProps) {
         return;
       }
 
-      // status === "unknown": resolve from shared localStorage session.
+      // status === "unknown": resolve from the shared session cookie.
       const resolved = await resolvePlayableAuth().catch(() => null);
       if (cancelled) return;
       window.clearTimeout(timeoutId);

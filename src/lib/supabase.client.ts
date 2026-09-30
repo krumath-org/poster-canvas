@@ -1,4 +1,7 @@
-import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+
+import { getKrumathSupabaseCookieOptions } from "@/lib/krumathCookies";
 
 let client: SupabaseClient | undefined;
 
@@ -14,16 +17,23 @@ function supabaseEnv(): { url: string; key: string } {
 /**
  * Browser client for the shared KruMath Supabase project.
  *
- * Uses the supabase-js default storage key (`sb-<project-ref>-auth-token`) in
- * localStorage — the same key the main site writes. krumath.com keeps its session in
- * localStorage rather than `@supabase/ssr` cookies, so a cookie-backed browser client
- * cannot see a signed-in user at all.
+ * Session store is `@supabase/ssr` cookies (`sb-<project-ref>-auth-token…`) at
+ * `path=/` with `domain=.krumath.com` — the same store the main site writes. Using a
+ * bare `createClient` here read `localStorage`, which krumath.com no longer writes.
  */
 export function getSupabaseBrowserClient(): SupabaseClient {
   const { url, key } = supabaseEnv();
-  client ??= createClient(url, key, {
+  if (client) return client;
+
+  const cookieOptions = getKrumathSupabaseCookieOptions(
+    typeof window !== "undefined" ? window.location.hostname : undefined,
+    typeof window !== "undefined" ? window.location.protocol === "https:" : true,
+  );
+
+  client = createBrowserClient(url, key, {
+    ...(cookieOptions ? { cookieOptions } : {}),
+    isSingleton: false,
     auth: {
-      persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
       flowType: "pkce",
@@ -39,7 +49,7 @@ export function getSupabaseBrowserClient(): SupabaseClient {
 /**
  * Signed-in user from the shared browser session, or null.
  *
- * `getSession()` is deliberate: it reads storage without a network round-trip, so a
+ * `getSession()` is deliberate: it reads the cookie without a network round-trip, so a
  * flaky auth server cannot sign a legitimate user out of the gate.
  */
 export async function getBrowserUser(): Promise<User | null> {
@@ -47,7 +57,7 @@ export async function getBrowserUser(): Promise<User | null> {
   return data.session?.user ?? null;
 }
 
-/** Clears the shared KruMath Supabase session (same localStorage key as apps/web). */
+/** Clears the shared KruMath Supabase session cookie (same store as apps/web). */
 export async function signOutBrowser(): Promise<void> {
   await getSupabaseBrowserClient().auth.signOut();
 }

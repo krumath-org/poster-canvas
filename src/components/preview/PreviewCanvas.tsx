@@ -122,7 +122,7 @@ export function PreviewCanvas({ iframeRef }: PreviewCanvasProps) {
           <iframe
             key={reloadNonce}
             ref={iframeRef}
-            src={`${publicUrl("sandbox/index.html")}?v=khmer-fonts-9`}
+            src={`${publicUrl("sandbox/index.html")}?v=khmer-mono-14`}
             title="Poster preview"
             sandbox="allow-scripts allow-same-origin"
             className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"

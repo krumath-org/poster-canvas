@@ -3,10 +3,10 @@ import type { User } from "@supabase/supabase-js";
 /**
  * Tri-state view of "may this visitor use Poster Studio?".
  *
- * `unknown` is deliberately not a synonym for signed out. krumath.com keeps its
- * Supabase session in localStorage, which never reaches the Worker, so a request with
- * no session cookie proves nothing about the visitor. Only the browser can resolve
- * `unknown`, because only the browser can read the shared session.
+ * `unknown` is deliberately not a synonym for signed out. The Worker can see the shared
+ * session cookie, but a request that arrives before the browser's client-side refresh
+ * has run (or on a navigation that has not flushed it yet) carries no user, so absence
+ * proves nothing. Only the browser can resolve `unknown`.
  */
 export type PlayableAuthState =
   | { status: "authenticated"; userId: string }

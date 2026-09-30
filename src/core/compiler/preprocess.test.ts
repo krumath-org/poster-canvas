@@ -99,6 +99,33 @@ export default function Poster() { return null; }`;
     expect(code).toContain("const __default = function Poster");
     expect(code).not.toContain("BlockMath");
   });
+
+  it("rewrites R3F imports onto Poster3D and sets features.r3f", () => {
+    const source = `import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import * as THREE from "three";
+export default function Poster() { return null; }`;
+    const { code, features, diagnostics } = preprocess(source);
+    expect(features.r3f).toBe(true);
+    expect(code).toContain("const { Canvas, useFrame } = Poster3D.fiber");
+    expect(code).toContain("const { OrbitControls } = Poster3D.drei");
+    expect(code).toContain("const THREE = Poster3D.THREE");
+    expect(diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
+  });
+
+  it("sets features.r3f when Canvas3D is imported from @poster/core", () => {
+    const source = `import { Poster, Canvas3D } from "@poster/core";
+export default function Poster() { return <Poster><Canvas3D /></Poster>; }`;
+    const { code, features } = preprocess(source);
+    expect(features.r3f).toBe(true);
+    expect(code).toContain("const { Poster, Canvas3D } = PosterCore");
+  });
+
+  it("leaves features.r3f false for 2D-only posters", () => {
+    const { features } = preprocess(`import { Poster, Text } from "@poster/core";
+export default function Poster() { return <Poster><Text>Hi</Text></Poster>; }`);
+    expect(features.r3f).toBe(false);
+  });
 });
 
 describe("wrapMathOnlyPoster", () => {

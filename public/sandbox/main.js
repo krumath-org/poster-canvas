@@ -5,8 +5,13 @@
  * and this isolated document compiles (Babel) and executes it, reporting
  * diagnostics back over postMessage.
  */
-import React from "https://esm.sh/react@18.3.1";
-import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+import React from "https://esm.sh/react@19.2.0";
+import * as ReactNS from "https://esm.sh/react@19.2.0";
+import * as ReactDOM from "https://esm.sh/react-dom@19.2.0";
+import * as ReactDOMClient from "https://esm.sh/react-dom@19.2.0/client";
+import { createRoot } from "https://esm.sh/react-dom@19.2.0/client";
+import * as JsxRuntime from "https://esm.sh/react@19.2.0/jsx-runtime";
+import * as JsxDevRuntime from "https://esm.sh/react@19.2.0/jsx-dev-runtime";
 import * as Babel from "https://esm.sh/@babel/standalone@7.26.4";
 import * as PosterCore from "./runtime.js";
 import {
@@ -36,6 +41,79 @@ import {
   scrapePosterData,
   waitForPosterFonts,
 } from "./exportHelpers.js";
+import {
+  freezeWebGLCanvasesForExport,
+  hideDebugOverlays,
+  waitForWebGLReady,
+} from "./webglExportFreeze.js";
+
+/** @type {null | Record<string, unknown>} */
+let poster3dModule = null;
+let poster3dLoadPromise = null;
+
+const REACT_CDN = "https://esm.sh/react@19.2.0";
+const REACT_DOM_CDN = "https://esm.sh/react-dom@19.2.0";
+
+function cjsExport(mod) {
+  return mod?.default ?? mod;
+}
+
+/**
+ * CJS chunks inside poster3d.js call require("react") or require(CDN URL).
+ * Map both bare ids and remapped esm.sh paths to the shared ESM React instance.
+ */
+function installReactRequireShim() {
+  const react = cjsExport(ReactNS);
+  const reactDom = cjsExport(ReactDOM);
+  const reactDomClient = cjsExport(ReactDOMClient);
+  const jsxRuntime = cjsExport(JsxRuntime);
+  const jsxDevRuntime = cjsExport(JsxDevRuntime);
+  const table = {
+    react,
+    "react/jsx-runtime": jsxRuntime,
+    "react/jsx-dev-runtime": jsxDevRuntime,
+    "react-dom": reactDom,
+    "react-dom/client": reactDomClient,
+    [REACT_CDN]: react,
+    [`${REACT_CDN}/jsx-runtime`]: jsxRuntime,
+    [`${REACT_CDN}/jsx-dev-runtime`]: jsxDevRuntime,
+    [REACT_DOM_CDN]: reactDom,
+    [`${REACT_DOM_CDN}/client`]: reactDomClient,
+  };
+  const previous = typeof globalThis.require === "function" ? globalThis.require : null;
+  globalThis.require = (id) => {
+    if (Object.prototype.hasOwnProperty.call(table, id)) {
+      return table[id];
+    }
+    if (previous) return previous(id);
+    throw new Error(`Sandbox require: unhandled module "${id}"`);
+  };
+}
+
+async function ensurePoster3D() {
+  if (poster3dModule) return poster3dModule;
+  if (!poster3dLoadPromise) {
+    // Deps in poster3d.js may touch process.env; the iframe has no Node process.
+    if (typeof globalThis.process === "undefined") {
+      globalThis.process = { env: { NODE_ENV: "production" } };
+    }
+    installReactRequireShim();
+    poster3dLoadPromise = import("./vendor/r3f/poster3d.js")
+      .then((mod) => {
+        const ns = mod.Poster3D ?? mod.default ?? mod;
+        poster3dModule = ns;
+        if (ns?.Canvas3D) {
+          globalThis.__posterCanvas3D = ns.Canvas3D;
+        }
+        return ns;
+      })
+      .catch((error) => {
+        poster3dLoadPromise = null;
+        throw error;
+      });
+  }
+  return poster3dLoadPromise;
+}
 
 const rootEl = document.getElementById("poster-root");
 rootEl.innerHTML = "";
@@ -123,7 +201,7 @@ function setSize(width, height) {
   rootEl.style.height = `${height}px`;
 }
 
-function compile(code, assets) {
+function compile(code, assets, Poster3D) {
   const output = Babel.transform(code, {
     filename: "poster.tsx",
     presets: [["react", { runtime: "classic" }], "typescript"],
@@ -140,8 +218,8 @@ function compile(code, assets) {
 ${output.code}
 ;return typeof __default !== "undefined" ? __default : (typeof Poster !== "undefined" ? Poster : null);`;
   // eslint-disable-next-line no-new-func -- intentional: sandboxed document only
-  const factory = new Function("React", "PosterCore", "assets", body);
-  return factory(React, PosterCore, assets);
+  const factory = new Function("React", "PosterCore", "Poster3D", "assets", body);
+  return factory(React, PosterCore, Poster3D ?? {}, assets);
 }
 
 function clearPreview() {
@@ -154,9 +232,28 @@ async function render(payload) {
   currentLogoSlot = payload.logoSlot ?? null;
   PosterCore.setPosterAssets(currentAssets);
 
+  const needsR3f = Boolean(payload.features?.r3f);
+  let Poster3D = {};
+  if (needsR3f) {
+    try {
+      Poster3D = await ensurePoster3D();
+    } catch (error) {
+      clearPreview();
+      send({
+        type: "compile-error",
+        diagnostic: {
+          severity: "error",
+          kind: "compile",
+          message: `Failed to load 3D runtime: ${String(error?.message ?? error)}`,
+        },
+      });
+      return;
+    }
+  }
+
   let Component;
   try {
-    Component = compile(payload.code, currentAssets);
+    Component = compile(payload.code, currentAssets, Poster3D);
   } catch (error) {
     clearPreview();
     send({
@@ -202,6 +299,9 @@ async function render(payload) {
       waitForPosterFonts({ timeoutMs: 8000 }),
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
+    if (needsR3f) {
+      await waitForWebGLReady(4000);
+    }
     send({ type: "rendered" });
   } catch (error) {
     clearPreview();
@@ -608,6 +708,8 @@ async function buildDataExports(format) {
 async function captureExport(lib, format, scale) {
   await waitForPosterFonts({ timeoutMs: 10_000 });
   const restoreFonts = preparePosterDomForExport(rootEl);
+  const restoreDebug = hideDebugOverlays(document);
+  const restoreWebGL = freezeWebGLCanvasesForExport(rootEl);
 
   try {
     const options = await buildHtmlToImageOptions(lib, rootEl, {
@@ -668,6 +770,16 @@ async function captureExport(lib, format, scale) {
     }
     throw new Error(`Unsupported format: ${format}`);
   } finally {
+    try {
+      restoreWebGL();
+    } catch {
+      /* ignore */
+    }
+    try {
+      restoreDebug();
+    } catch {
+      /* ignore */
+    }
     restoreFonts();
   }
 }

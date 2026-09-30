@@ -21,9 +21,9 @@ const probePlayableAuth = createIsomorphicFn()
 /**
  * Hard-gate Poster Studio routes and hand the outcome to the route context.
  *
- * The Worker only ever sees cookies, so it returns `unknown` rather than bouncing a
- * user whose session lives in localStorage. The route renders an AuthGate for that
- * case and the browser finishes the check.
+ * The Worker may see no user on a fresh navigation even when a session cookie exists, so
+ * it returns `unknown` rather than bouncing the user. The route renders an AuthGate for
+ * that case and the browser finishes the check.
  */
 export async function requirePlayableUser(routerPath: string): Promise<PlayableAuthState> {
   // Local editing has no krumath.com session. Gate only in production.

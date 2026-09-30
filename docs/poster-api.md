@@ -28,8 +28,42 @@ import { Poster, Box, Text, Stack, Grid } from "@poster/core";
 | `Icon`      | Lucide-style icon placeholder                                                               |
 | `Badge`     | Small label chip                                                                            |
 | `Button`    | Styled button                                                                               |
+| `Canvas3D`  | Export-safe R3F WebGL canvas (`preserveDrawingBuffer`, export freeze registry)              |
 
 `Latex` and `KaTeX` are aliases of `Math`.
+
+### Canvas3D (WebGL)
+
+Prefer `Canvas3D` over raw `@react-three/fiber` `Canvas` so PNG/PDF export captures the GL frame:
+
+```tsx
+import { Poster, Text, Canvas3D } from "@poster/core";
+import { Environment, Center } from "@react-three/drei";
+
+export default function PosterApp() {
+  return (
+    <Poster className="relative w-full h-full">
+      <div className="absolute inset-0">
+        <Canvas3D camera={{ position: [0, 0, 4] }} frameloop="demand">
+          <ambientLight intensity={0.6} />
+          <Environment preset="city" />
+          <Center>
+            <mesh>
+              <boxGeometry />
+              <meshStandardMaterial color="#2563EB" />
+            </mesh>
+          </Center>
+        </Canvas3D>
+      </div>
+      <Text size={48} className="relative z-10 p-12">
+        Hello 3D
+      </Text>
+    </Poster>
+  );
+}
+```
+
+Allowlisted companion imports (rewritten to `Poster3D` in the sandbox): `three`, `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `@react-three/csg`, `@react-spring/three`, `@use-gesture/react`, `maath`, `leva`, `@theatre/core`, `@theatre/r3f`. Do not ship leva / Theatre studio UI in the final composition. Author GLB→JSX with the gltfjsx CLI; runtime loading uses `useGLTF` from drei.
 
 ### Math (KaTeX)
 

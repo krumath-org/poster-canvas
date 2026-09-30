@@ -74,6 +74,7 @@ export class SandboxBridge {
     height: number;
     assets?: PosterProjectAssets;
     logoSlot?: PosterLogoSlot | null;
+    features?: { r3f?: boolean };
   }): void {
     this.post({ type: "render", ...payload });
   }

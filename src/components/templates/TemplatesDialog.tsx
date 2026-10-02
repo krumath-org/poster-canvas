@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { TEMPLATES } from "@/data/templates";
 import { useEditorStore } from "@/stores/editorStore";
 import { useProjectStore } from "@/stores/projectStore";
@@ -20,9 +21,16 @@ export function TemplatesDialog() {
   const setOpen = useUiStore((s) => s.setTemplatesOpen);
   const dirty = useEditorStore((s) => s.dirty);
   const loadTemplate = useProjectStore((s) => s.loadTemplate);
+  const createFromTemplate = useProjectStore((s) => s.createFromTemplate);
   const [pending, setPending] = useState<(typeof TEMPLATES)[number] | null>(null);
 
-  const applyTemplate = (template: (typeof TEMPLATES)[number]) => {
+  const applyAsNew = (template: (typeof TEMPLATES)[number]) => {
+    void createFromTemplate(template.code, template.width, template.height, template.name);
+    setOpen(false);
+    setPending(null);
+  };
+
+  const applyReplace = (template: (typeof TEMPLATES)[number]) => {
     loadTemplate(template.code, template.width, template.height, template.name);
     setOpen(false);
     setPending(null);
@@ -31,9 +39,9 @@ export function TemplatesDialog() {
   const onSelect = (template: (typeof TEMPLATES)[number]) => {
     if (dirty) {
       setPending(template);
-    } else {
-      applyTemplate(template);
+      return;
     }
+    applyAsNew(template);
   };
 
   return (
@@ -66,15 +74,23 @@ export function TemplatesDialog() {
       <AlertDialog open={Boolean(pending)} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Replace current code?</AlertDialogTitle>
+            <AlertDialogTitle>Apply template?</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. Loading a template will replace the editor contents.
+              You have unsaved changes. Create a new project from this template, or replace the
+              current project’s code.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => pending && applyTemplate(pending)}>
-              Load template
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => pending && applyReplace(pending)}
+            >
+              Replace current
+            </Button>
+            <AlertDialogAction onClick={() => pending && applyAsNew(pending)}>
+              New project
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

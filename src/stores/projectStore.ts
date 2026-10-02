@@ -3,6 +3,7 @@ import type { PosterLogoAsset, PosterLogoSlot, PosterProject } from "@/core/type
 import { DEFAULT_SIZE } from "@/data/sizes";
 import { STARTER_CODE } from "@/data/templates";
 import { getProjectRepository } from "@/lib/config";
+import { extractPosterTitle } from "@/lib/extractPosterTitle";
 import { DEFAULT_LOGO_SLOT } from "@/lib/logoSlot";
 import { useEditorStore } from "@/stores/editorStore";
 import { usePreviewStore } from "@/stores/previewStore";
@@ -10,6 +11,13 @@ import { useUiStore } from "@/stores/uiStore";
 import { toast } from "sonner";
 
 export const DEFAULT_PROJECT_NAME = "Untitled Poster";
+
+/** Lock only when the stored name diverges from default and from code-derived title. */
+export function resolveNameLocked(project: Pick<PosterProject, "name" | "code">): boolean {
+  if (project.name === DEFAULT_PROJECT_NAME) return false;
+  const extracted = extractPosterTitle(project.code);
+  return project.name !== extracted;
+}
 
 interface ProjectState {
   current: PosterProject | null;
@@ -30,7 +38,15 @@ interface ProjectState {
   lockProjectName: () => void;
   deleteProject: (id: string) => Promise<void>;
   setSize: (width: number, height: number) => void;
+  /** Replace code on the current project (same id). */
   loadTemplate: (code: string, width: number, height: number, name?: string) => void;
+  /** Persist a new project from a template (new id). */
+  createFromTemplate: (
+    code: string,
+    width: number,
+    height: number,
+    name?: string,
+  ) => Promise<void>;
   setLogo: (asset: PosterLogoAsset) => void;
   setLogoSlot: (partial: Partial<PosterLogoSlot>) => void;
   clearLogo: () => void;
@@ -97,7 +113,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       set({
         current: project,
         loading: false,
-        nameLocked: project.name !== DEFAULT_PROJECT_NAME,
+        nameLocked: resolveNameLocked(project),
       });
     } catch (err) {
       const message = String(err);
@@ -107,6 +123,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   newProject: async (name, width, height) => {
+    if (get().current && useEditorStore.getState().dirty) {
+      await get().saveProject({ quiet: true });
+    }
     const project = createBlankProject(
       name,
       width ?? DEFAULT_SIZE.width,
@@ -253,6 +272,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   loadTemplate: (code, width, height, name) => {
     const { current } = get();
+    const title = extractPosterTitle(code) ?? name ?? current?.name ?? DEFAULT_PROJECT_NAME;
     if (current) {
       // Keep assets / logoSlot so branding survives template swaps.
       const updated: PosterProject = {
@@ -260,16 +280,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         code,
         width,
         height,
-        name: name ?? current.name,
+        name: title,
         updatedAt: now(),
       };
-      set({ current: updated, nameLocked: true });
+      set({ current: updated, nameLocked: false });
     } else {
       const ts = now();
       set({
         current: {
           id: crypto.randomUUID(),
-          name: name ?? DEFAULT_PROJECT_NAME,
+          name: title,
           code,
           width,
           height,
@@ -278,12 +298,43 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           assets: {},
           logoSlot: null,
         },
-        nameLocked: true,
+        nameLocked: false,
       });
     }
     useEditorStore.getState().resetCode(code);
     usePreviewStore.getState().reloadSandbox();
     markProjectDirty();
+  },
+
+  createFromTemplate: async (code, width, height, name) => {
+    if (get().current && useEditorStore.getState().dirty) {
+      await get().saveProject({ quiet: true });
+    }
+    const title = extractPosterTitle(code) ?? name ?? DEFAULT_PROJECT_NAME;
+    const ts = now();
+    const project: PosterProject = {
+      id: crypto.randomUUID(),
+      name: title,
+      code,
+      width,
+      height,
+      createdAt: ts,
+      updatedAt: ts,
+      assets: {},
+      logoSlot: null,
+    };
+    set({ loading: true, error: null });
+    try {
+      await getProjectRepository().createProject(project);
+      useEditorStore.getState().resetCode(project.code);
+      usePreviewStore.getState().reloadSandbox();
+      const projects = await getProjectRepository().getProjects();
+      set({ current: project, projects, loading: false, nameLocked: false });
+    } catch (err) {
+      const message = String(err);
+      set({ loading: false, error: message });
+      toast.error(message);
+    }
   },
 
   setLogo: (asset) => {

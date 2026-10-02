@@ -107,6 +107,9 @@ export function CodeEditor({ className }: CodeEditorProps) {
               wordWrap: "on",
               tabSize: 2,
               automaticLayout: true,
+              // Escape overflow:hidden ancestors so Find/suggest/hover aren't clipped
+              // or stacked under panel chrome (and stay clickable).
+              fixedOverflowWidgets: true,
             });
             editor.addAction({
               id: "poster.run",
@@ -127,6 +130,7 @@ export function CodeEditor({ className }: CodeEditorProps) {
           }}
           options={{
             padding: { top: 12 },
+            fixedOverflowWidgets: true,
           }}
         />
       </Suspense>

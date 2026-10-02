@@ -116,6 +116,16 @@
   }
 }
 
+/*
+ * Monaco Find widget (Ctrl/Cmd+F): button tooltips flicker in a show/hide loop and
+ * steal clicks from Close / Replace (microsoft/monaco-editor#5208). Hide hovers
+ * only while Find is open so Escape and the X button work again.
+ */
+body:has(.monaco-editor .find-widget.visible) .monaco-hover,
+body:has(.monaco-editor .find-widget.visible) .workbench-hover-container {
+  display: none !important;
+}
+
 @layer components {
   .studio-editor-panel {
     background: var(--editor-bg);

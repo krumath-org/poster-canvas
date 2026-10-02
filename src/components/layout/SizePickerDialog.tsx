@@ -63,34 +63,40 @@ export function SizePickerDialog() {
             );
           })}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="width">Width</Label>
-            <Input
-              id="width"
-              type="number"
-              min={1}
-              value={width}
-              onChange={(e) => setWidth(Number(e.target.value))}
-            />
+        <form
+          className="mt-4 space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            apply();
+          }}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="width">Width</Label>
+              <Input
+                id="width"
+                type="number"
+                min={1}
+                value={width}
+                onChange={(e) => setWidth(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="height">Height</Label>
+              <Input
+                id="height"
+                type="number"
+                min={1}
+                value={height}
+                onChange={(e) => setHeight(Number(e.target.value))}
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="height">Height</Label>
-            <Input
-              id="height"
-              type="number"
-              min={1}
-              value={height}
-              onChange={(e) => setHeight(Number(e.target.value))}
-            />
-          </div>
-        </div>
-        {!findSizePreset(width, height) && (
-          <p className="text-xs text-muted-foreground">Custom size</p>
-        )}
-        <Button type="button" onClick={apply}>
-          Apply
-        </Button>
+          {!findSizePreset(width, height) && (
+            <p className="text-xs text-muted-foreground">Custom size</p>
+          )}
+          <Button type="submit">Apply</Button>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -33,8 +33,21 @@ function writeAll(projects: PosterProject[]): void {
  * Browser implementation of {@link ProjectRepository}.
  * Swap this for a remote repository (see docs/integration.md) without
  * touching the editor.
+ *
+ * Mutations are serialized so concurrent autosave + New cannot drop siblings.
  */
 export class LocalProjectRepository implements ProjectRepository {
+  private writeChain: Promise<void> = Promise.resolve();
+
+  private enqueue<T>(fn: () => T): Promise<T> {
+    const run = this.writeChain.then(() => fn());
+    this.writeChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
   async getProjects(): Promise<PosterProject[]> {
     return readAll().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
@@ -44,23 +57,29 @@ export class LocalProjectRepository implements ProjectRepository {
   }
 
   async createProject(project: PosterProject): Promise<PosterProject> {
-    const all = readAll();
-    all.push(project);
-    writeAll(all);
-    return project;
+    return this.enqueue(() => {
+      const all = readAll();
+      all.push(project);
+      writeAll(all);
+      return project;
+    });
   }
 
   async updateProject(project: PosterProject): Promise<PosterProject> {
-    const all = readAll();
-    const index = all.findIndex((p) => p.id === project.id);
-    if (index === -1) all.push(project);
-    else all[index] = project;
-    writeAll(all);
-    return project;
+    return this.enqueue(() => {
+      const all = readAll();
+      const index = all.findIndex((p) => p.id === project.id);
+      if (index === -1) all.push(project);
+      else all[index] = project;
+      writeAll(all);
+      return project;
+    });
   }
 
   async deleteProject(id: string): Promise<void> {
-    writeAll(readAll().filter((p) => p.id !== id));
+    return this.enqueue(() => {
+      writeAll(readAll().filter((p) => p.id !== id));
+    });
   }
 }
 

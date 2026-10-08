@@ -14,6 +14,13 @@ export const LOSSY_EXPORT_QUALITY = 1;
 export const PDF_EXPORT_QUALITY = 1;
 export const PPTX_PX_PER_INCH = 96;
 
+/** Physical A4 dimensions for PDF export (300 DPI, portrait). */
+export const A4_WIDTH_MM = 210;
+export const A4_HEIGHT_MM = 297;
+export const A4_DPI = 300;
+export const A4_WIDTH_PX = 2480;  // Math.round(210 / 25.4 * 300)
+export const A4_HEIGHT_PX = 3508; // Math.round(297 / 25.4 * 300)
+
 export function clampExportScale(scale, posterWidth, posterHeight, maxEdgePx = MAX_EXPORT_EDGE_PX) {
   const edge = Math.max(posterWidth, posterHeight, 1);
   const maxScale = Math.max(1, Math.floor(maxEdgePx / edge));

@@ -23,6 +23,10 @@ export type ParentToSandboxMessage =
     }
   | {
       target: "poster-sandbox";
+      type: "ping";
+    }
+  | {
+      target: "poster-sandbox";
       type: "export";
       format: ExportFormat;
       scale?: number;

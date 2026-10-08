@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CambodiaMapRouteImport } from './routes/cambodia-map'
+import { Route as PrintProjectIdRouteImport } from './routes/print.$projectId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const CambodiaMapRoute = CambodiaMapRouteImport.update({
   path: '/cambodia-map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrintProjectIdRoute = PrintProjectIdRouteImport.update({
+  id: '/print/$projectId',
+  path: '/print/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cambodia-map': typeof CambodiaMapRoute
+  '/print/$projectId': typeof PrintProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cambodia-map': typeof CambodiaMapRoute
+  '/print/$projectId': typeof PrintProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cambodia-map': typeof CambodiaMapRoute
+  '/print/$projectId': typeof PrintProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cambodia-map'
+  fullPaths: '/' | '/cambodia-map' | '/print/$projectId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cambodia-map'
-  id: '__root__' | '/' | '/cambodia-map'
+  to: '/' | '/cambodia-map' | '/print/$projectId'
+  id: '__root__' | '/' | '/cambodia-map' | '/print/$projectId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CambodiaMapRoute: typeof CambodiaMapRoute
+  PrintProjectIdRoute: typeof PrintProjectIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CambodiaMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/print/$projectId': {
+      id: '/print/$projectId'
+      path: '/print/$projectId'
+      fullPath: '/print/$projectId'
+      preLoaderRoute: typeof PrintProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CambodiaMapRoute: CambodiaMapRoute,
+  PrintProjectIdRoute: PrintProjectIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

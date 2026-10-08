@@ -90,6 +90,7 @@ declare module "@poster/core" {
   export const Button: any;
   export const Logo: any;
   export const Math: any;
+  export const InlineMath: any;
   export const BlockMath: any;
   export const Image: any;
   export const Canvas3D: any;

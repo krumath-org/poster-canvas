@@ -35,6 +35,10 @@ import {
   MIN_PDF_EXPORT_BYTES,
   PDF_EXPORT_QUALITY,
   PPTX_PX_PER_INCH,
+  A4_WIDTH_MM,
+  A4_HEIGHT_MM,
+  A4_WIDTH_PX,
+  A4_HEIGHT_PX,
   preparePosterDomForExport,
   sanitizeIllustratorSvg,
   scanDomForLayers,
@@ -743,20 +747,28 @@ async function captureExport(lib, format, scale) {
       return { data: await captureCanonicalSvg(), mimeType: "image/svg+xml" };
     }
     if (format === "pdf") {
-      const jpeg = await lib.toJpeg(rootEl, {
-        ...options,
+      // Render at true 300 DPI (2480×3508 px) regardless of the canvas's CSS size.
+      // This produces a pixel-perfect A4 raster that can be embedded at exactly
+      // 210×297 mm in the PDF — the correct physical MediaBox for A4 portrait.
+      const cssW = rootEl.offsetWidth;
+      const cssH = rootEl.offsetHeight;
+      const dpiScale = A4_WIDTH_PX / cssW; // scale so canvas → 2480 px wide
+      const highResOptions = await buildHtmlToImageOptions(lib, rootEl, {
+        pixelRatio: dpiScale,
+        width: cssW,
+        height: cssH,
         quality: PDF_EXPORT_QUALITY,
         backgroundColor: "#ffffff",
       });
+      const jpeg = await lib.toJpeg(rootEl, highResOptions);
       const { jsPDF } = await import("https://esm.sh/jspdf@2.5.2");
-      const w = rootEl.offsetWidth;
-      const h = rootEl.offsetHeight;
       const pdf = new jsPDF({
-        orientation: w > h ? "landscape" : "portrait",
-        unit: "px",
-        format: [w, h],
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4", // exactly 210×297 mm — correct physical A4 MediaBox
       });
-      pdf.addImage(jpeg, "JPEG", 0, 0, w, h);
+      // Place the 300 DPI JPEG flush to the page — filling all 210×297 mm.
+      pdf.addImage(jpeg, "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
       return { data: pdf.output("datauristring"), mimeType: "application/pdf" };
     }
     if (format === "psd") {
@@ -829,16 +841,9 @@ async function runExport(payload) {
       }
     }
 
-    if (format === "pdf") {
-      while (dataUrlByteLength(result.data) < MIN_PDF_EXPORT_BYTES && scale < maxScale) {
-        scale += 1;
-        result = await captureExport(lib, format, scale);
-      }
-      while (dataUrlByteLength(result.data) > MAX_PDF_EXPORT_BYTES && scale > 1) {
-        scale -= 1;
-        result = await captureExport(lib, format, scale);
-      }
-    }
+    // PDF: fixed 300 DPI render — no size-banding loop needed.
+    // The canvas is always captured at A4_WIDTH_PX (2480 px) wide, giving a
+    // deterministic ~1–4 MB JPEG embedded in a correct 210×297 mm PDF page.
 
     send({
       type: "export-done",
@@ -855,6 +860,7 @@ async function runExport(payload) {
 window.addEventListener("message", (event) => {
   const payload = event.data;
   if (!payload || payload.target !== "poster-sandbox") return;
+  if (payload.type === "ping") send({ type: "sandbox-ready" });
   if (payload.type === "render") void render(payload);
   if (payload.type === "clear") clearPreview();
   if (payload.type === "export") void runExport(payload);

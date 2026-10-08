@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { exportPoster } from "@/lib/exportPoster";
+import { publicUrl } from "@/lib/publicUrl";
+import { useProjectStore } from "@/stores/projectStore";
 import { toast } from "sonner";
 
 const GROUPS: {
@@ -48,7 +50,7 @@ const GROUPS: {
   },
   {
     label: "Document",
-    formats: [{ format: "pdf", label: "PDF" }],
+    formats: [], // rendered manually below (Quick PDF + Professional PDF)
   },
   {
     label: "Data",
@@ -65,12 +67,25 @@ interface ExportMenuProps {
 }
 
 export function ExportMenu({ bridge, children }: ExportMenuProps) {
+  const projectId = useProjectStore((s) => s.current?.id);
+
   const handleExport = (format: ExportFormat) => {
     if (!bridge) {
       toast.error("Preview not ready");
       return;
     }
     void exportPoster(bridge, format);
+  };
+
+  const handleProfessionalPdf = async () => {
+    const current = useProjectStore.getState().current;
+    if (!current?.id) {
+      toast.error("Save your project first to use Professional PDF export");
+      return;
+    }
+    await useProjectStore.getState().saveProject({ quiet: true });
+    const targetUrl = publicUrl(`print/${encodeURIComponent(current.id)}`);
+    window.open(targetUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -85,20 +100,42 @@ export function ExportMenu({ bridge, children }: ExportMenuProps) {
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               {group.label}
             </DropdownMenuLabel>
-            {group.formats.map(({ format, label, tooltip }) => {
-              const item = (
-                <DropdownMenuItem key={format} onClick={() => void handleExport(format)}>
-                  {label}
-                </DropdownMenuItem>
-              );
-              return tooltip ? (
-                <WithTooltip key={format} label={tooltip} side="left">
-                  {item}
+            {group.label === "Document" ? (
+              // PDF split: Quick PDF (raster A4) + Professional PDF (browser print)
+              <>
+                <WithTooltip
+                  label="A4 portrait · 300 DPI · Fast download · WebGL supported"
+                  side="left"
+                >
+                  <DropdownMenuItem onClick={() => void handleExport("pdf")}>
+                    Quick PDF
+                  </DropdownMenuItem>
                 </WithTooltip>
-              ) : (
-                item
-              );
-            })}
+                <WithTooltip
+                  label="Real vector text · Selectable · Sharp at any zoom · Opens print dialog"
+                  side="left"
+                >
+                  <DropdownMenuItem onClick={handleProfessionalPdf}>
+                    Professional PDF
+                  </DropdownMenuItem>
+                </WithTooltip>
+              </>
+            ) : (
+              group.formats.map(({ format, label, tooltip }) => {
+                const item = (
+                  <DropdownMenuItem key={format} onClick={() => void handleExport(format)}>
+                    {label}
+                  </DropdownMenuItem>
+                );
+                return tooltip ? (
+                  <WithTooltip key={format} label={tooltip} side="left">
+                    {item}
+                  </WithTooltip>
+                ) : (
+                  item
+                );
+              })
+            )}
           </div>
         ))}
       </DropdownMenuContent>

@@ -40,6 +40,11 @@ export class SandboxBridge {
   attach(iframe: HTMLIFrameElement): void {
     this.iframe = iframe;
     this.ready = false;
+    this.ping();
+  }
+
+  ping(): void {
+    this.post({ type: "ping" });
   }
 
   detach(): void {

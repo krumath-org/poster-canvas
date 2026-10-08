@@ -29,18 +29,36 @@
     <script src="./vendor/katex/katex.min.js"></script>
     <script src="./vendor/katex/mhchem.min.js"></script>
     <style>
+      *,
+      *::before,
+      *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       html,
       body {
         margin: 0;
         padding: 0;
         background: transparent;
         font-family: "Kantumruy Pro", "IBM Plex Sans", system-ui, sans-serif;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       #poster-root {
         overflow: hidden;
         position: relative;
         font-family: "Kantumruy Pro", "IBM Plex Sans", system-ui, sans-serif;
         font-synthesis: none;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      @media print {
+        *,
+        *::before,
+        *::after {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
       }
       /* Latin/math keep mono; Khmer falls through to Kantumruy (unicode-range). */
       #poster-root .font-mono,

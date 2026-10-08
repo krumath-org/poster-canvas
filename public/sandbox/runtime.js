@@ -43,6 +43,7 @@ function resolveTexSource(tex, children) {
  */
 function MathComponent({
   tex,
+  math,
   children,
   display = false,
   macros,
@@ -52,7 +53,7 @@ function MathComponent({
   style = {},
   throwOnError = false,
 }) {
-  const expr = resolveTexSource(tex, children);
+  const expr = resolveTexSource(tex ?? math, children);
   const katex = getKatex();
   const tag = display ? "div" : "span";
   const baseStyle = {
@@ -107,6 +108,7 @@ function MathComponent({
 }
 
 export { MathComponent as Math };
+export { MathComponent as InlineMath };
 
 /** Display-mode math (block). Equivalent to `<Math display size={48} />`. */
 export function BlockMath({ size = 48, ...props }) {
